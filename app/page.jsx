@@ -2,6 +2,7 @@
 import React, { useState } from 'react';
 import { FolderTree, File, Upload, Download, Copy, CheckCircle } from 'lucide-react';
 
+const PATH = "https://8080-zizwar-zip2prompt-2uqzrtfq2fo.ws-eu115.gitpod.io"
 const FileTree = ({ structure, onSelect, selectedFiles }) => {
   const renderTree = (node) => (
     <ul className="pl-4">
@@ -49,7 +50,7 @@ const ZipExtractor = () => {
     formData.append('zipFile', file);
 
     try {
-      const response = await fetch('http://localhost:3001/upload', {
+      const response = await fetch(PATH+'/upload', {
         method: 'POST',
         body: formData,
       });
@@ -73,7 +74,7 @@ const ZipExtractor = () => {
   const handleExtract = async () => {
     setIsLoading(true);
     try {
-      const response = await fetch('http://localhost:3001/extract', {
+      const response = await fetch(PATH+'/extract', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ files: selectedFiles }),
@@ -98,7 +99,7 @@ const ZipExtractor = () => {
     <div className="min-h-screen bg-gray-100 py-12 px-4 sm:px-6 lg:px-8">
       <div className="max-w-3xl mx-auto">
         <div className="text-center mb-12">
-          <h1 className="text-4xl font-extrabold text-gray-900 mb-4">ZipInsight</h1>
+          <h1 className="text-4xl font-extrabold text-gray-900 mb-4">Zip Insight</h1>
           <p className="text-xl text-gray-600">استكشف وادمج محتويات ملفات ZIP بسهولة</p>
         </div>
         
