@@ -1,30 +1,19 @@
 {
-  "name": "nextjs",
-  "version": "0.1.0",
-  "private": true,
+  "name": "zip2prompt",
+  "version": "0.7.0",
+  "main": "server.js",
+  "start": "node server.js",
   "scripts": {
-    "dev": "next dev",
-    "build": "next build",
-    "start": "next start",
-    "lint": "next lint",
-    "server": "cd server && npm start"
+    "test": "echo \"Error: no test specified\" && exit 1"
   },
+  "type": "module",
+  "keywords": [],
+  "author": "Brahim BIDI",
+  "license": "ISC",
+  "description": "zip2prompt",
   "dependencies": {
+    "@hono/node-server": "^1.12.0",
     "adm-zip": "^0.5.14",
-    "hono": "^4.4.12",
-    "lucide-react": "^0.401.0",
-    "next": "14.2.4",
-    "react": "^18",
-    "react-dom": "^18"
-  },
-  "devDependencies": {
-    "@types/node": "^20",
-    "@types/react": "^18",
-    "@types/react-dom": "^18",
-    "eslint": "^8",
-    "eslint-config-next": "14.2.4",
-    "postcss": "^8",
-    "tailwindcss": "^3.4.1",
-    "typescript": "^5"
+    "hono": "^4.4.13"
   }
 }
