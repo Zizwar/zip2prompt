@@ -6,20 +6,42 @@
     <title>مستخرج ZIP</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/alpinejs/3.10.3/cdn.min.js" defer></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.3/css/all.min.css" rel="stylesheet">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.7.1/jszip.min.js"></script>
+    <style>
+        [x-cloak] { display: none !important; }
+    </style>
 </head>
-<body class="bg-gray-100">
-    <div class="container mx-auto p-4" x-data="zipExtractor()">
-        <h1 class="text-2xl font-bold mb-4">مستخرج ZIP</h1>
+<body class="bg-gray-100 dark:bg-gray-800 text-gray-800 dark:text-gray-200 transition-colors duration-200" x-data="zipExtractor()" x-cloak>
+    <div class="container mx-auto p-4">
+        <header class="flex justify-between items-center mb-6">
+            <h1 class="text-3xl font-bold" x-text="translations[currentLang].title"></h1>
+            <div class="space-x-2 rtl:space-x-reverse">
+                <button @click="toggleDarkMode" class="px-3 py-1 rounded bg-gray-200 dark:bg-gray-700">
+                    <i :class="darkMode ? 'fas fa-sun' : 'fas fa-moon'"></i>
+                </button>
+                <select x-model="currentLang" class="px-3 py-1 rounded bg-gray-200 dark:bg-gray-700">
+                    <option value="ar">العربية</option>
+                    <option value="en">English</option>
+                </select>
+            </div>
+        </header>
+
+        <div class="mb-6">
+            <label :for="translations[currentLang].promptLabel" class="block mb-2 font-semibold" x-text="translations[currentLang].promptLabel"></label>
+            <textarea :id="translations[currentLang].promptLabel" x-model="mainPrompt" class="w-full p-2 border rounded dark:bg-gray-700 dark:border-gray-600" rows="3"></textarea>
+        </div>
         
-        <div class="mb-4">
-            <input type="file" @change="handleFileUpload" accept=".zip" class="border p-2 rounded">
+        <div class="mb-6">
+            <label :for="translations[currentLang].fileUpload" class="block mb-2 font-semibold" x-text="translations[currentLang].fileUpload"></label>
+            <input type="file" :id="translations[currentLang].fileUpload" @change="handleFileUpload" accept=".zip" class="border p-2 rounded dark:bg-gray-700 dark:border-gray-600">
         </div>
 
         <template x-if="fileStructure">
-            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div>
-                    <h2 class="text-xl font-semibold mb-2">هيكل الملفات</h2>
-                    <div id="fileTree" class="border p-4 rounded">
+                    <h2 class="text-xl font-semibold mb-2" x-text="translations[currentLang].fileStructure"></h2>
+                    <div id="fileTree" class="border p-4 rounded dark:bg-gray-700 dark:border-gray-600 max-h-96 overflow-y-auto">
                         <template x-for="(value, key) in fileStructure" :key="key">
                             <div>
                                 <template x-if="typeof value === 'object'">
@@ -46,25 +68,32 @@
                     </div>
                     <button 
                         @click="handleExtract"
-                        class="mt-4 bg-blue-500 text-white px-4 py-2 rounded"
-                    >
-                        استخراج الملفات المحددة
-                    </button>
+                        class="mt-4 bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded transition-colors duration-200"
+                        x-text="translations[currentLang].extractButton"
+                    ></button>
                 </div>
                 <div>
-                    <h2 class="text-xl font-semibold mb-2">المحتوى المدمج</h2>
-                    <textarea 
-                        x-model="mergedContent"
-                        readonly
-                        class="w-full h-64 p-2 border rounded"
-                    ></textarea>
+                    <h2 class="text-xl font-semibold mb-2" x-text="translations[currentLang].mergedContent"></h2>
+                    <div class="relative">
+                        <textarea 
+                            x-model="mergedContent"
+                            readonly
+                            class="w-full h-96 p-2 border rounded dark:bg-gray-700 dark:border-gray-600 resize-none"
+                        ></textarea>
+                        <button 
+                            @click="copyToClipboard"
+                            class="absolute top-2 right-2 bg-gray-200 dark:bg-gray-600 p-2 rounded"
+                            :title="translations[currentLang].copyToClipboard"
+                        >
+                            <i class="fas fa-copy"></i>
+                        </button>
+                    </div>
                     <template x-if="mergedContent">
                         <button 
                             @click="downloadMergedContent"
-                            class="mt-2 bg-green-500 text-white px-4 py-2 rounded"
-                        >
-                            تنزيل المحتوى المدمج
-                        </button>
+                            class="mt-2 bg-green-500 hover:bg-green-600 text-white px-4 py-2 rounded transition-colors duration-200"
+                            x-text="translations[currentLang].downloadButton"
+                        ></button>
                     </template>
                 </div>
             </div>
@@ -78,6 +107,33 @@
                 selectedFiles: [],
                 mergedContent: '',
                 zipFile: null,
+                mainPrompt: '',
+                darkMode: false,
+                currentLang: 'ar',
+                translations: {
+                    ar: {
+                        title: 'مستخرج ZIP',
+                        promptLabel: 'البرومبت الرئيسي',
+                        fileUpload: 'رفع ملف ZIP',
+                        fileStructure: 'هيكل الملفات',
+                        extractButton: 'استخراج الملفات المحددة',
+                        mergedContent: 'المحتوى المدمج',
+                        downloadButton: 'تنزيل المحتوى المدمج',
+                        copyToClipboard: 'نسخ إلى الحافظة',
+                        copiedToClipboard: 'تم النسخ إلى الحافظة'
+                    },
+                    en: {
+                        title: 'ZIP Extractor',
+                        promptLabel: 'Main Prompt',
+                        fileUpload: 'Upload ZIP File',
+                        fileStructure: 'File Structure',
+                        extractButton: 'Extract Selected Files',
+                        mergedContent: 'Merged Content',
+                        downloadButton: 'Download Merged Content',
+                        copyToClipboard: 'Copy to Clipboard',
+                        copiedToClipboard: 'Copied to Clipboard'
+                    }
+                },
 
                 async handleFileUpload(event) {
                     this.zipFile = event.target.files[0];
@@ -93,7 +149,7 @@
                         this.fileStructure = await response.json();
                     } catch (error) {
                         console.error('Error uploading file:', error);
-                        alert('حدث خطأ أثناء رفع الملف. يرجى المحاولة مرة أخرى.');
+                        alert(this.translations[this.currentLang].uploadError);
                     }
                 },
 
@@ -118,10 +174,10 @@
                         });
                         if (!response.ok) throw new Error('Network response was not ok');
                         const result = await response.json();
-                        this.mergedContent = result.content;
+                        this.mergedContent = this.mainPrompt + '\n\n' + result.content;
                     } catch (error) {
                         console.error('Error extracting files:', error);
-                        alert('حدث خطأ أثناء استخراج الملفات. يرجى المحاولة مرة أخرى.');
+                        alert(this.translations[this.currentLang].extractError);
                     }
                 },
 
@@ -132,6 +188,17 @@
                     a.href = url;
                     a.download = 'merged_content.txt';
                     a.click();
+                },
+
+                copyToClipboard() {
+                    navigator.clipboard.writeText(this.mergedContent).then(() => {
+                        alert(this.translations[this.currentLang].copiedToClipboard);
+                    });
+                },
+
+                toggleDarkMode() {
+                    this.darkMode = !this.darkMode;
+                    document.body.classList.toggle('dark', this.darkMode);
                 }
             };
         }

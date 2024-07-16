@@ -1,15 +1,15 @@
-// server.js
+
 import { Hono } from 'hono'
 import { serve } from '@hono/node-server'
 import { cors } from 'hono/cors'
-import AdmZip from 'adm-zip'
 import { serveStatic } from "@hono/node-server/serve-static";
+import AdmZip from 'adm-zip'
 
 const app = new Hono()
 
 app.use('/*', cors())
 
-// Serve static files
+
 app.use("/", serveStatic({ root: "./public" }));
 
 app.post('/upload', async (c) => {
@@ -46,7 +46,16 @@ app.post('/extract', async (c) => {
     const extractedContent = files.map(file => {
       const entry = zip.getEntry(file)
       if (entry) {
-        return `// ${file}\n${entry.getData().toString('utf8')}`
+        let content = entry.getData().toString('utf8')
+        if (file.endsWith('.json')) {
+          try {
+            const jsonObj = JSON.parse(content)
+            content = JSON.stringify(jsonObj, null, 2)
+          } catch (e) {
+            console.error('Error parsing JSON:', e)
+          }
+        }
+        return `// ${file}\n${content}`
       }
       return `// ${file}\nFile not found in the ZIP archive.`
     }).join('\n\n')
