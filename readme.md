@@ -1,70 +1,46 @@
 # Zip 2 Prompt
 
-Zip 2 Prompt is a web-based tool that allows users to extract and analyze the contents of ZIP files, making it easier to work with compressed file archives, especially for processing or understanding large codebases.
+Zip 2 Prompt is a powerful tool designed to bridge the gap between complex project structures and AI comprehension. It transforms compressed project files into AI-readable prompts, enabling deep analysis and understanding of multi-file projects by AI models.
 
-## Features
+## Key Features
 
-- **ZIP File Upload**: Users can upload ZIP files directly through the web interface.
-- **File Structure Visualization**: The tool displays the hierarchical structure of the uploaded ZIP file, allowing users to easily navigate through directories and files.
-- **Selective Extraction**: Users can choose specific files or directories they want to extract from the ZIP archive.
-- **Content Merging**: Selected files are extracted and their contents are merged into a single text file, making it easy to analyze or process multiple files at once.
-- **Download Extracted Content**: Users can download the merged content of selected files as a single text file.
-- **Web-based Interface**: The entire process can be done through a user-friendly web interface, requiring no additional software installation.
+- **ZIP to AI-Ready Text**: Convert entire project structures from ZIP files into a single, AI-digestible text format.
+- **Selective File Extraction**: Choose specific files or directories for targeted AI analysis.
+- **Structure Preservation**: Maintain the project's file hierarchy in the output for context-aware AI processing.
+- **Prompt Customization**: Add custom prompts or instructions to guide AI analysis.
+- **Multi-Format Support**: Handle various file types commonly found in software projects.
 
-## Technology Stack
+## Why Zip 2 Prompt?
 
-- **Frontend**: HTML, CSS (Tailwind CSS), JavaScript (Alpine.js)
-- **Backend**: Node.js with Hono.js framework
-- **File Processing**: adm-zip for ZIP file handling
+1. **AI Limitation Workaround**: AI models can't directly read ZIP files or navigate complex file structures. Zip 2 Prompt solves this.
+
+2. **Holistic Project Analysis**: Enable AI to understand entire projects, not just isolated files.
+
+3. **Efficient AI Prompting**: Streamline the process of feeding large, structured projects to AI for analysis or code review.
+
+4. **Preserve Context**: Maintain file relationships and project structure, crucial for accurate AI interpretation.
+
+5. **Time-Saving**: Quickly prepare large projects for AI processing without manual file extraction and copying.
+
+## Usage Scenario
+
+Imagine you have a complex web application with multiple JavaScript files, CSS, HTML, and configuration files. To get an AI's insights on the entire project:
+
+1. Compress your project into a ZIP file.
+2. Upload it to Zip 2 Prompt.
+3. Select relevant files for analysis.
+4. Add any specific instructions or questions for the AI.
+5. Generate a comprehensive text output.
+6. Feed this output to an AI model for holistic project analysis, code review, or architectural insights.
 
 ## Getting Started
 
-### Prerequisites
+[Installation and basic usage instructions here]
 
-- Node.js (version 14 or higher)
-- npm (usually comes with Node.js)
+## Contribute
 
-### Installation
-
-1. Clone the repository:
-   ```
-   git clone https://github.com/Zizwar/zip2prompt.git
-   cd zip2prompt
-   ```
-
-2. Install dependencies:
-   ```
-   npm install
-   ```
-
-3. Start the server:
-   ```
-   npm start
-   ```
-
-4. Open your web browser and navigate to `http://localhost:3000` to use the application.
-
-## Usage
-
-1. Click on the file upload area to select a ZIP file from your computer.
-2. Once uploaded, you'll see the file structure of the ZIP archive.
-3. Select the files you want to extract by checking the boxes next to their names.
-4. Click the "Extract Selected Files" button to process the selected files.
-5. The merged content of the selected files will appear in the text area on the right.
-6. You can download the merged content by clicking the "Download Merged Content" button.
-
-## Contributing
-
-Contributions to Zip 2 Prompt are welcome! Please feel free to submit a Pull Request.
-
-## License
-
-This project is open source and available under the [MIT License](LICENSE).
-
-## Contact
-
-If you have any questions or suggestions, please open an issue on the GitHub repository.
+We welcome contributions to enhance Zip 2 Prompt's capabilities in preparing project files for AI analysis.
 
 ---
 
-Happy coding with Zip 2 Prompt!
+Zip 2 Prompt: Unleash the full potential of AI in understanding your complex projects!
