@@ -1,6 +1,9 @@
 # Zip 2 Prompt
 
+[![Gitpod ready-to-code](https://img.shields.io/badge/Gitpod-ready--to--code-blue?logo=gitpod)](https://gitpod.io/#https://github.com/Zizwar/zip2prompt)
+
 Zip 2 Prompt is a powerful tool designed to bridge the gap between complex project structures and AI comprehension. It transforms compressed project files into AI-readable prompts, enabling deep analysis and understanding of multi-file projects by AI models.
+
 
 ## Key Features
 
@@ -34,13 +37,16 @@ Imagine you have a complex web application with multiple JavaScript files, CSS, 
 6. Feed this output to an AI model for holistic project analysis, code review, or architectural insights.
 
 ## Getting Started
+```bash
+get clone https://github.com/Zizwar/zip2prompt.git
+```
+```bash
+npm i; npm run start
+```
 
-[Installation and basic usage instructions here]
+## Screen
+![zip2prompt](https://raw.githubusercontent.com/Zizwar/zip2prompt/main/screen/image.png)
 
-## Contribute
+## Test
 
-We welcome contributions to enhance Zip 2 Prompt's capabilities in preparing project files for AI analysis.
-
----
-
-Zip 2 Prompt: Unleash the full potential of AI in understanding your complex projects!
+[![Gitpod ready-to-code](https://img.shields.io/badge/Gitpod-ready--to--code-blue?logo=gitpod)](https://gitpod.io/#https://github.com/Zizwar/zip2prompt)
