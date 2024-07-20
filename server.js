@@ -3,13 +3,9 @@ import { serve } from '@hono/node-server'
 import { cors } from 'hono/cors'
 import { serveStatic } from "@hono/node-server/serve-static";
 import AdmZip from 'adm-zip'
-import { exec } from 'child_process'
 import fs from 'fs'
 import path from 'path'
 import os from 'os'
-import util from 'util'
-
-const execPromise = util.promisify(exec);
 
 const app = new Hono()
 
@@ -23,36 +19,28 @@ async function fetchFileFromUrl(url) {
 }
 
 async function fetchFromGitHub(url, branch = 'main') {
-  const tempDir = fs.mkdtempSync(path.join(os.tmpdir(), 'github-'));
-  try {
-    console.log(`Cloning repository: ${url}, branch: ${branch}`);
-    const { stdout, stderr } = await execPromise(`git clone --depth 1 --branch ${branch} ${url} ${tempDir}`, { timeout: 60000 });
-    console.log('Clone stdout:', stdout);
-    if (stderr) console.error('Clone stderr:', stderr);
-    
-    const zip = new AdmZip();
-    const addFilesToZip = (dir, zipPath = '') => {
-      const files = fs.readdirSync(dir, { withFileTypes: true });
-      for (const file of files) {
-        const filePath = path.join(dir, file.name);
-        if (file.isDirectory()) {
-          if (file.name !== '.git') {
-            addFilesToZip(filePath, path.join(zipPath, file.name));
-          }
-        } else {
-          zip.addLocalFile(filePath, zipPath);
-        }
-      }
-    };
-    addFilesToZip(tempDir);
-    
-    return zip.toBuffer();
-  } catch (error) {
-    console.error('Error in fetchFromGitHub:', error);
-    throw new Error(`Failed to clone repository: ${error.message}`);
-  } finally {
-    fs.rmSync(tempDir, { recursive: true, force: true });
+  // Extract owner and repo from the GitHub URL
+  const match = url.match(/github\.com\/([^\/]+)\/([^\/]+)/);
+  if (!match) throw new Error('Invalid GitHub URL');
+  const [, owner, repo] = match;
+
+  console.log(`Fetching repository: ${owner}/${repo}, branch: ${branch}`);
+
+  // Construct the API URL to get the ZIP file
+  const apiUrl = `https://api.github.com/repos/${owner}/${repo}/zipball/${branch}`;
+
+  const response = await fetch(apiUrl, {
+    headers: {
+      'Accept': 'application/vnd.github.v3+json',
+      'User-Agent': 'Zip2Prompt-App'
+    }
+  });
+
+  if (!response.ok) {
+    throw new Error(`GitHub API error! status: ${response.status}`);
   }
+
+  return await response.arrayBuffer();
 }
 
 app.post('/upload', async (c) => {
