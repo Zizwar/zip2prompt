@@ -41,7 +41,7 @@ Imagine you have a complex web application with multiple JavaScript files, CSS, 
 get clone https://github.com/Zizwar/zip2prompt.git
 ```
 ```bash
-npm i; npm run start
+cd zip2prompt; npm i; npm run start
 ```
 
 ## Screen
