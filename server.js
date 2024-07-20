@@ -3,10 +3,13 @@ import { serve } from '@hono/node-server'
 import { cors } from 'hono/cors'
 import { serveStatic } from "@hono/node-server/serve-static";
 import AdmZip from 'adm-zip'
-import { execSync } from 'child_process'
+import { exec } from 'child_process'
 import fs from 'fs'
 import path from 'path'
 import os from 'os'
+import util from 'util'
+
+const execPromise = util.promisify(exec);
 
 const app = new Hono()
 
@@ -22,7 +25,10 @@ async function fetchFileFromUrl(url) {
 async function fetchFromGitHub(url, branch = 'main') {
   const tempDir = fs.mkdtempSync(path.join(os.tmpdir(), 'github-'));
   try {
-    execSync(`git clone --depth 1 --branch ${branch} ${url} ${tempDir}`, { stdio: 'inherit' });
+    console.log(`Cloning repository: ${url}, branch: ${branch}`);
+    const { stdout, stderr } = await execPromise(`git clone --depth 1 --branch ${branch} ${url} ${tempDir}`, { timeout: 60000 });
+    console.log('Clone stdout:', stdout);
+    if (stderr) console.error('Clone stderr:', stderr);
     
     const zip = new AdmZip();
     const addFilesToZip = (dir, zipPath = '') => {
@@ -41,6 +47,9 @@ async function fetchFromGitHub(url, branch = 'main') {
     addFilesToZip(tempDir);
     
     return zip.toBuffer();
+  } catch (error) {
+    console.error('Error in fetchFromGitHub:', error);
+    throw new Error(`Failed to clone repository: ${error.message}`);
   } finally {
     fs.rmSync(tempDir, { recursive: true, force: true });
   }
@@ -75,8 +84,6 @@ app.post('/upload', async (c) => {
     return c.json({ error: 'Internal server error: ' + error.message }, 500)
   }
 })
-
-// [Previous imports and setup remain the same]
 
 app.post('/extract', async (c) => {
   try {
@@ -135,21 +142,6 @@ app.post('/extract', async (c) => {
   }
 })
 
-function getFileStructureText(structure, indent = '') {
-  let text = '';
-  for (const [name, item] of Object.entries(structure)) {
-    if (item.type === 'file') {
-      text += `${indent}${name}\n`;
-    } else {
-      text += `${indent}${name}/\n`;
-      text += getFileStructureText(item.children, indent + '  ');
-    }
-  }
-  return text;
-}
-
-
-
 function buildFileStructure(entries) {
   const structure = {}
   entries.forEach(entry => {
@@ -175,10 +167,24 @@ function buildFileStructure(entries) {
   return structure
 }
 
+function getFileStructureText(structure, indent = '') {
+  let text = '';
+  for (const [name, item] of Object.entries(structure)) {
+    if (item.type === 'file') {
+      text += `${indent}${name}\n`;
+    } else {
+      text += `${indent}${name}/\n`;
+      text += getFileStructureText(item.children, indent + '  ');
+    }
+  }
+  return text;
+}
+
 // Start the server
+const port = process.env.PORT || 3000;
 serve({
   fetch: app.fetch,
-  port: 3000
+  port
 })
 
-console.log('Server is running on http://localhost:3000')
+console.log(`Server is running on http://localhost:${port}`)
