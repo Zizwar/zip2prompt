@@ -35,5 +35,5 @@ jobs:
         uses: denoland/deployctl@v1
         with:
           project: "zip2prompt"
-          entrypoint: "index.js"
-          root: ""
+          entrypoint: ""
+          root: "./index.js"
