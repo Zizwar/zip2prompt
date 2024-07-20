@@ -1,4 +1,3 @@
-
 import { Hono } from 'hono'
 import { serve } from '@hono/node-server'
 import { cors } from 'hono/cors'
@@ -8,8 +7,6 @@ import AdmZip from 'adm-zip'
 const app = new Hono()
 
 app.use('/*', cors())
-
-
 app.use("/", serveStatic({ root: "./public" }));
 
 app.post('/upload', async (c) => {
@@ -18,11 +15,9 @@ app.post('/upload', async (c) => {
     const file = formData.get('zipFile')
     
     if (!file) return c.json({ error: 'No file uploaded' }, 400)
-
     const buffer = await file.arrayBuffer()
     const zip = new AdmZip(Buffer.from(buffer))
     const zipEntries = zip.getEntries()
-
     const fileStructure = buildFileStructure(zipEntries)
     return c.json(fileStructure)
   } catch (error) {
@@ -38,11 +33,9 @@ app.post('/extract', async (c) => {
     const file = formData.get('zipFile')
     
     if (!file || !filesString) return c.json({ error: 'Missing file or file list' }, 400)
-
     const files = JSON.parse(filesString)
     const buffer = await file.arrayBuffer()
     const zip = new AdmZip(Buffer.from(buffer))
-
     const extractedContent = files.map(file => {
       const entry = zip.getEntry(file)
       if (entry) {
@@ -59,7 +52,6 @@ app.post('/extract', async (c) => {
       }
       return `// ${file}\nFile not found in the ZIP archive.`
     }).join('\n\n')
-
     return c.json({ content: extractedContent })
   } catch (error) {
     console.error('Error in /extract:', error)
@@ -74,10 +66,18 @@ function buildFileStructure(entries) {
     let current = structure
     path.forEach((part, index) => {
       if (index === path.length - 1) {
-        current[part] = entry.entryName
+        current[part] = {
+          type: 'file',
+          path: entry.entryName
+        }
       } else {
-        if (!current[part]) current[part] = {}
-        current = current[part]
+        if (!current[part]) {
+          current[part] = {
+            type: 'directory',
+            children: {}
+          }
+        }
+        current = current[part].children
       }
     })
   })

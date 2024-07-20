@@ -1,28 +1,28 @@
 <!DOCTYPE html>
-<html lang="ar" dir="rtl">
+<html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>مستخرج ZIP</title>
+    <title>ZIP 2 Prompt</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/alpinejs/3.10.3/cdn.min.js" defer></script>
-    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.3/css/all.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.7.1/jszip.min.js"></script>
     <style>
         [x-cloak] { display: none !important; }
     </style>
 </head>
-<body class="bg-gray-100 dark:bg-gray-800 text-gray-800 dark:text-gray-200 transition-colors duration-200" x-data="zipExtractor()" x-cloak>
+<body class="bg-gray-100 dark:bg-gray-800 text-gray-800 dark:text-gray-200 transition-colors duration-200" x-data="zip2Prompt()" x-init="init()" x-cloak>
     <div class="container mx-auto p-4">
         <header class="flex justify-between items-center mb-6">
             <h1 class="text-3xl font-bold" x-text="translations[currentLang].title"></h1>
-            <div class="space-x-2 rtl:space-x-reverse">
+            <div class="space-x-2">
                 <button @click="toggleDarkMode" class="px-3 py-1 rounded bg-gray-200 dark:bg-gray-700">
                     <i :class="darkMode ? 'fas fa-sun' : 'fas fa-moon'"></i>
                 </button>
                 <select x-model="currentLang" class="px-3 py-1 rounded bg-gray-200 dark:bg-gray-700">
-                    <option value="ar">العربية</option>
                     <option value="en">English</option>
+                    <option value="ar">العربية</option>
                 </select>
             </div>
         </header>
@@ -43,27 +43,7 @@
                     <h2 class="text-xl font-semibold mb-2" x-text="translations[currentLang].fileStructure"></h2>
                     <div id="fileTree" class="border p-4 rounded dark:bg-gray-700 dark:border-gray-600 max-h-96 overflow-y-auto">
                         <template x-for="(value, key) in fileStructure" :key="key">
-                            <div>
-                                <template x-if="typeof value === 'object'">
-                                    <div>
-                                        <div class="font-semibold" x-text="key"></div>
-                                        <div class="pl-4">
-                                            <template x-for="(subValue, subKey) in value" :key="subKey">
-                                                <div class="flex items-center">
-                                                    <input type="checkbox" :value="subValue" @change="toggleFile" class="mr-2">
-                                                    <span x-text="subKey"></span>
-                                                </div>
-                                            </template>
-                                        </div>
-                                    </div>
-                                </template>
-                                <template x-if="typeof value !== 'object'">
-                                    <div class="flex items-center">
-                                        <input type="checkbox" :value="value" @change="toggleFile" class="mr-2">
-                                        <span x-text="key"></span>
-                                    </div>
-                                </template>
-                            </div>
+                            <div x-html="renderFileTree(key, value, '')"></div>
                         </template>
                     </div>
                     <button 
@@ -101,29 +81,17 @@
     </div>
 
     <script>
-        function zipExtractor() {
+        function zip2Prompt() {
             return {
                 fileStructure: null,
                 selectedFiles: [],
                 mergedContent: '',
-                zipFile: null,
                 mainPrompt: '',
-                darkMode: false,
-                currentLang: 'ar',
+                darkMode: true,
+                currentLang: 'en',
                 translations: {
-                    ar: {
-                        title: 'مستخرج ZIP',
-                        promptLabel: 'البرومبت الرئيسي',
-                        fileUpload: 'رفع ملف ZIP',
-                        fileStructure: 'هيكل الملفات',
-                        extractButton: 'استخراج الملفات المحددة',
-                        mergedContent: 'المحتوى المدمج',
-                        downloadButton: 'تنزيل المحتوى المدمج',
-                        copyToClipboard: 'نسخ إلى الحافظة',
-                        copiedToClipboard: 'تم النسخ إلى الحافظة'
-                    },
                     en: {
-                        title: 'ZIP Extractor',
+                        title: 'ZIP 2 Prompt',
                         promptLabel: 'Main Prompt',
                         fileUpload: 'Upload ZIP File',
                         fileStructure: 'File Structure',
@@ -132,13 +100,33 @@
                         downloadButton: 'Download Merged Content',
                         copyToClipboard: 'Copy to Clipboard',
                         copiedToClipboard: 'Copied to Clipboard'
+                    },
+                    ar: {
+                        title: 'ZIP 2 Prompt',
+                        promptLabel: 'البرومبت الرئيسي',
+                        fileUpload: 'رفع ملف ZIP',
+                        fileStructure: 'هيكل الملفات',
+                        extractButton: 'استخراج الملفات المحددة',
+                        mergedContent: 'المحتوى المدمج',
+                        downloadButton: 'تنزيل المحتوى المدمج',
+                        copyToClipboard: 'نسخ إلى الحافظة',
+                        copiedToClipboard: 'تم النسخ إلى الحافظة'
                     }
                 },
 
+                init() {
+                    this.toggleDarkMode();
+                },
+
+                toggleDarkMode() {
+                    this.darkMode = !this.darkMode;
+                    document.body.classList.toggle('dark', this.darkMode);
+                },
+
                 async handleFileUpload(event) {
-                    this.zipFile = event.target.files[0];
+                    const file = event.target.files[0];
                     const formData = new FormData();
-                    formData.append('zipFile', this.zipFile);
+                    formData.append('zipFile', file);
 
                     try {
                         const response = await fetch('/upload', {
@@ -153,18 +141,18 @@
                     }
                 },
 
-                toggleFile(event) {
-                    const file = event.target.value;
-                    if (event.target.checked) {
+                toggleFile(file) {
+                    const index = this.selectedFiles.indexOf(file);
+                    if (index === -1) {
                         this.selectedFiles.push(file);
                     } else {
-                        this.selectedFiles = this.selectedFiles.filter(f => f !== file);
+                        this.selectedFiles.splice(index, 1);
                     }
                 },
 
                 async handleExtract() {
                     const formData = new FormData();
-                    formData.append('zipFile', this.zipFile);
+                    formData.append('zipFile', document.querySelector('input[type="file"]').files[0]);
                     formData.append('files', JSON.stringify(this.selectedFiles));
 
                     try {
@@ -196,9 +184,30 @@
                     });
                 },
 
-                toggleDarkMode() {
-                    this.darkMode = !this.darkMode;
-                    document.body.classList.toggle('dark', this.darkMode);
+                renderFileTree(name, item, path) {
+                    const fullPath = path ? `${path}/${name}` : name;
+                    if (item.type === 'file') {
+                        return `
+                            <div class="flex items-center mb-1">
+                                <input type="checkbox" value="${item.path}" @change="toggleFile('${item.path}')" class="mr-2">
+                                <i class="fas fa-file text-blue-500 mr-2"></i>
+                                <span>${name}</span>
+                            </div>
+                        `;
+                    } else {
+                        let html = `
+                            <div class="mb-1">
+                                <i class="fas fa-folder text-yellow-500 mr-2"></i>
+                                <span class="font-semibold">${name}</span>
+                            </div>
+                            <div class="pl-4">
+                        `;
+                        for (const [childName, childItem] of Object.entries(item.children)) {
+                            html += this.renderFileTree(childName, childItem, fullPath);
+                        }
+                        html += '</div>';
+                        return html;
+                    }
                 }
             };
         }
