@@ -38,15 +38,53 @@
         </div>
         
         <div class="mb-6">
-            <label :for="translations[currentLang].fileUpload" class="block mb-2 font-semibold" x-text="translations[currentLang].fileUpload"></label>
-            <input type="file" :id="translations[currentLang].fileUpload" @change="handleFileUpload" accept=".zip" class="border p-2 rounded dark:bg-gray-700 dark:border-gray-600">
-        </div>
-
-        <div class="mb-6">
-            <label :for="translations[currentLang].urlInput" class="block mb-2 font-semibold" x-text="translations[currentLang].urlInput"></label>
-            <input type="text" :id="translations[currentLang].urlInput" x-model="urlInput" class="w-full p-2 border rounded dark:bg-gray-700 dark:border-gray-600" :placeholder="translations[currentLang].urlPlaceholder">
-            <input type="text" :id="translations[currentLang].branchInput" x-model="branchInput" class="w-full mt-2 p-2 border rounded dark:bg-gray-700 dark:border-gray-600" :placeholder="translations[currentLang].branchPlaceholder">
-            <button @click="handleUrlUpload" class="mt-2 bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded transition-colors duration-200" x-text="translations[currentLang].uploadFromUrl"></button>
+            <div class="flex border-b">
+                <button @click="activeTab = 'file'" :class="{ 'border-b-2 border-blue-500': activeTab === 'file' }" class="py-2 px-4">
+                    <i class="fas fa-file-archive mr-2"></i>
+                    <span x-text="translations[currentLang].fileTab"></span>
+                </button>
+                <button @click="activeTab = 'url'" :class="{ 'border-b-2 border-blue-500': activeTab === 'url' }" class="py-2 px-4">
+                    <i class="fas fa-link mr-2"></i>
+                    <span x-text="translations[currentLang].urlTab"></span>
+                </button>
+                <button @click="activeTab = 'github'" :class="{ 'border-b-2 border-blue-500': activeTab === 'github' }" class="py-2 px-4">
+                    <i class="fab fa-github mr-2"></i>
+                    <span x-text="translations[currentLang].githubTab"></span>
+                </button>
+            </div>
+            
+            <div x-show="activeTab === 'file'" class="mt-4">
+                <div 
+                    @dragover.prevent="$event.target.classList.add('bg-blue-100')"
+                    @dragleave.prevent="$event.target.classList.remove('bg-blue-100')"
+                    @drop.prevent="handleFileDrop($event)"
+                    class="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center cursor-pointer hover:bg-gray-50 transition duration-150"
+                >
+                    <i class="fas fa-cloud-upload-alt text-4xl mb-4"></i>
+                    <p x-text="translations[currentLang].dragDropText"></p>
+                    <input type="file" @change="handleFileUpload" accept=".zip" class="hidden" id="fileInput">
+                    <label for="fileInput" class="mt-4 inline-block bg-blue-500 text-white px-4 py-2 rounded cursor-pointer hover:bg-blue-600 transition duration-150">
+                        <span x-text="translations[currentLang].selectFile"></span>
+                    </label>
+                </div>
+            </div>
+            
+            <div x-show="activeTab === 'url'" class="mt-4">
+                <input type="text" x-model="urlInput" :placeholder="translations[currentLang].urlPlaceholder" class="w-full p-2 border rounded">
+                <button @click="handleUrlUpload" class="mt-2 bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded transition duration-150">
+                    <i class="fas fa-upload mr-2"></i>
+                    <span x-text="translations[currentLang].uploadFromUrl"></span>
+                </button>
+            </div>
+            
+            <div x-show="activeTab === 'github'" class="mt-4">
+                <input type="text" x-model="githubUrl" :placeholder="translations[currentLang].githubUrlPlaceholder" class="w-full p-2 border rounded mb-2">
+                <input type="text" x-model="branchInput" :placeholder="translations[currentLang].branchPlaceholder" class="w-full p-2 border rounded">
+                <button @click="handleGithubUpload" class="mt-2 bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded transition duration-150">
+                    <i class="fab fa-github mr-2"></i>
+                    <span x-text="translations[currentLang].uploadFromGithub"></span>
+                </button>
+            </div>
         </div>
 
         <template x-if="fileStructure">
@@ -60,9 +98,11 @@
                     </div>
                     <button 
                         @click="handleExtract"
-                        class="mt-4 bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded transition-colors duration-200"
-                        x-text="translations[currentLang].extractButton"
-                    ></button>
+                        class="mt-4 bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded transition duration-150"
+                    >
+                        <i class="fas fa-file-export mr-2"></i>
+                        <span x-text="translations[currentLang].extractButton"></span>
+                    </button>
                 </div>
                 <div>
                     <h2 class="text-xl font-semibold mb-2" x-text="translations[currentLang].mergedContent"></h2>
@@ -80,12 +120,17 @@
                             <i class="fas fa-copy"></i>
                         </button>
                     </div>
+
+
+
                     <template x-if="mergedContent">
                         <button 
                             @click="downloadMergedContent"
-                            class="mt-2 bg-green-500 hover:bg-green-600 text-white px-4 py-2 rounded transition-colors duration-200"
-                            x-text="translations[currentLang].downloadButton"
-                        ></button>
+                            class="mt-2 bg-green-500 hover:bg-green-600 text-white px-4 py-2 rounded transition duration-150"
+                        >
+                            <i class="fas fa-download mr-2"></i>
+                            <span x-text="translations[currentLang].downloadButton"></span>
+                        </button>
                     </template>
                 </div>
             </div>
@@ -102,17 +147,26 @@
                 darkMode: true,
                 currentLang: 'en',
                 urlInput: '',
+                githubUrl: '',
                 branchInput: '',
+                activeTab: 'file',
                 translations: {
                     en: {
                         title: 'ZIP 2 Prompt',
                         promptLabel: 'Main Prompt',
+                        fileTab: 'File Upload',
+                        urlTab: 'URL',
+                        githubTab: 'GitHub',
+                        dragDropText: 'Drag and drop your ZIP file here, or click to select',
+                        selectFile: 'Select File',
                         fileUpload: 'Upload ZIP File',
                         urlInput: 'Enter URL',
-                        urlPlaceholder: 'Enter GitHub repository URL (e.g., https://github.com/username/repo.git)',
+                        urlPlaceholder: 'Enter direct link to ZIP file',
+                        githubUrlPlaceholder: 'Enter GitHub repository URL (e.g., https://github.com/username/repo.git)',
                         branchInput: 'Enter Branch Name',
                         branchPlaceholder: 'Enter branch name (default: main)',
                         uploadFromUrl: 'Upload from URL',
+                        uploadFromGithub: 'Upload from GitHub',
                         fileStructure: 'File Structure',
                         extractButton: 'Extract Selected Files',
                         mergedContent: 'Merged Content',
@@ -122,16 +176,22 @@
                         uploadError: 'Error uploading file',
                         extractError: 'Error extracting files'
                     },
-
                     ar: {
                         title: 'ZIP 2 Prompt',
                         promptLabel: 'البرومبت الرئيسي',
+                        fileTab: 'رفع ملف',
+                        urlTab: 'رابط',
+                        githubTab: 'GitHub',
+                        dragDropText: 'اسحب وأفلت ملف ZIP هنا، أو انقر للاختيار',
+                        selectFile: 'اختر ملف',
                         fileUpload: 'رفع ملف ZIP',
                         urlInput: 'أدخل الرابط',
-                        urlPlaceholder: 'أدخل رابط مستودع GitHub (مثال: https://github.com/username/repo.git)',
+                        urlPlaceholder: 'أدخل رابط مباشر لملف ZIP',
+                        githubUrlPlaceholder: 'أدخل رابط مستودع GitHub (مثال: https://github.com/username/repo.git)',
                         branchInput: 'أدخل اسم الفرع',
                         branchPlaceholder: 'أدخل اسم الفرع (الافتراضي: main)',
                         uploadFromUrl: 'رفع من الرابط',
+                        uploadFromGithub: 'رفع من GitHub',
                         fileStructure: 'هيكل الملفات',
                         extractButton: 'استخراج الملفات المحددة',
                         mergedContent: 'المحتوى المدمج',
@@ -157,8 +217,19 @@
                     await this.uploadFile(file);
                 },
 
+                async handleFileDrop(event) {
+                    const file = event.dataTransfer.files[0];
+                    if (file && file.type === 'application/zip') {
+                        await this.uploadFile(file);
+                    }
+                },
+
                 async handleUrlUpload() {
-                    await this.uploadFile(null, this.urlInput, this.branchInput);
+                    await this.uploadFile(null, this.urlInput);
+                },
+
+                async handleGithubUpload() {
+                    await this.uploadFile(null, this.githubUrl, this.branchInput);
                 },
 
                 async uploadFile(file = null, url = null, branch = null) {
@@ -204,6 +275,8 @@
                         formData.append('zipFile', fileInput.files[0]);
                     } else if (this.urlInput) {
                         formData.append('url', this.urlInput);
+                    } else if (this.githubUrl) {
+                        formData.append('url', this.githubUrl);
                         if (this.branchInput) {
                             formData.append('branch', this.branchInput);
                         }
