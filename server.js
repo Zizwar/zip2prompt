@@ -76,6 +76,8 @@ app.post('/upload', async (c) => {
   }
 })
 
+// [Previous imports and setup remain the same]
+
 app.post('/extract', async (c) => {
   try {
     const formData = await c.req.formData()
@@ -83,6 +85,7 @@ app.post('/extract', async (c) => {
     const file = formData.get('zipFile')
     const url = formData.get('url')
     const branch = formData.get('branch') || 'main'
+    const includeFileStructure = formData.get('includeFileStructure') === 'true'
     
     if ((!file && !url) || !filesString) return c.json({ error: 'Missing file/URL or file list' }, 400)
     const files = JSON.parse(filesString)
@@ -99,6 +102,9 @@ app.post('/extract', async (c) => {
     }
 
     const zip = new AdmZip(Buffer.from(buffer))
+    const zipEntries = zip.getEntries()
+    const fileStructure = buildFileStructure(zipEntries)
+
     const extractedContent = files.map(file => {
       const entry = zip.getEntry(file)
       if (entry) {
@@ -115,12 +121,34 @@ app.post('/extract', async (c) => {
       }
       return `// ${file}\nFile not found in the ZIP archive.`
     }).join('\n\n')
-    return c.json({ content: extractedContent })
+
+    let responseContent = extractedContent;
+    if (includeFileStructure) {
+      const structureText = getFileStructureText(fileStructure);
+      responseContent = `File Structure:\n${structureText}\n\nFile Contents:\n${extractedContent}`;
+    }
+
+    return c.json({ content: responseContent })
   } catch (error) {
     console.error('Error in /extract:', error)
     return c.json({ error: 'Internal server error: ' + error.message }, 500)
   }
 })
+
+function getFileStructureText(structure, indent = '') {
+  let text = '';
+  for (const [name, item] of Object.entries(structure)) {
+    if (item.type === 'file') {
+      text += `${indent}${name}\n`;
+    } else {
+      text += `${indent}${name}/\n`;
+      text += getFileStructureText(item.children, indent + '  ');
+    }
+  }
+  return text;
+}
+
+
 
 function buildFileStructure(entries) {
   const structure = {}
