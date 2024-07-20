@@ -87,7 +87,7 @@
             </div>
         </div>
 
-        <template x-if="fileStructure">
+   <template x-if="fileStructure">
             <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div class="rtl-exception">
                     <h2 class="text-xl font-semibold mb-2" x-text="translations[currentLang].fileStructure"></h2>
@@ -95,6 +95,10 @@
                         <template x-for="(value, key) in fileStructure" :key="key">
                             <div x-html="renderFileTree(key, value, '')"></div>
                         </template>
+                    </div>
+                    <div class="mt-4 flex items-center">
+                        <input type="checkbox" id="includeFileStructure" x-model="includeFileStructure" class="mr-2">
+                        <label for="includeFileStructure" x-text="translations[currentLang].includeFileStructure"></label>
                     </div>
                     <button 
                         @click="handleExtract"
@@ -150,6 +154,7 @@
                 githubUrl: '',
                 branchInput: '',
                 activeTab: 'file',
+                includeFileStructure: false,
                 translations: {
                     en: {
                         title: 'ZIP 2 Prompt',
@@ -282,6 +287,7 @@
                         }
                     }
                     formData.append('files', JSON.stringify(this.selectedFiles));
+                    formData.append('includeFileStructure', this.includeFileStructure);
 
                     try {
                         const response = await fetch('/extract', {
@@ -293,12 +299,30 @@
                             throw new Error(error.error || 'Unknown error');
                         }
                         const result = await response.json();
-                        this.mergedContent = this.mainPrompt + '\n\n' + result.content;
+                        let content = result.content;
+                        if (this.includeFileStructure) {
+                            content = "Project Structure:\n" + this.getFileStructureText(this.fileStructure) + "\n\nFile Contents:\n" + content;
+                        }
+                        this.mergedContent = this.mainPrompt + '\n\n' + content;
                     } catch (error) {
                         console.error('Error extracting files:', error);
                         alert(this.translations[this.currentLang].extractError + ': ' + error.message);
                     }
                 },
+
+                getFileStructureText(structure, indent = '') {
+                    let text = '';
+                    for (const [name, item] of Object.entries(structure)) {
+                        if (item.type === 'file') {
+                            text += `${indent}${name}\n`;
+                        } else {
+                            text += `${indent}${name}/\n`;
+                            text += this.getFileStructureText(item.children, indent + '  ');
+                        }
+                    }
+                    return text;
+                },
+
 
                 downloadMergedContent() {
                     const blob = new Blob([this.mergedContent], { type: 'text/plain' });
