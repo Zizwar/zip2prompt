@@ -10,13 +10,18 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.7.1/jszip.min.js"></script>
     <style>
         [x-cloak] { display: none !important; }
+        .rtl-exception { direction: ltr !important; }
     </style>
 </head>
-<body class="bg-gray-100 dark:bg-gray-800 text-gray-800 dark:text-gray-200 transition-colors duration-200" x-data="zip2Prompt()" x-init="init()" x-cloak>
+<body class="bg-gray-100 dark:bg-gray-800 text-gray-800 dark:text-gray-200 transition-colors duration-200" 
+      x-data="zip2Prompt()" 
+      x-init="init()" 
+      x-cloak
+      :dir="currentLang === 'ar' ? 'rtl' : 'ltr'">
     <div class="container mx-auto p-4">
         <header class="flex justify-between items-center mb-6">
             <h1 class="text-3xl font-bold" x-text="translations[currentLang].title"></h1>
-            <div class="space-x-2">
+            <div class="space-x-2 rtl:space-x-reverse">
                 <button @click="toggleDarkMode" class="px-3 py-1 rounded bg-gray-200 dark:bg-gray-700">
                     <i :class="darkMode ? 'fas fa-sun' : 'fas fa-moon'"></i>
                 </button>
@@ -37,9 +42,15 @@
             <input type="file" :id="translations[currentLang].fileUpload" @change="handleFileUpload" accept=".zip" class="border p-2 rounded dark:bg-gray-700 dark:border-gray-600">
         </div>
 
+        <div class="mb-6">
+            <label :for="translations[currentLang].urlInput" class="block mb-2 font-semibold" x-text="translations[currentLang].urlInput"></label>
+            <input type="text" :id="translations[currentLang].urlInput" x-model="urlInput" class="w-full p-2 border rounded dark:bg-gray-700 dark:border-gray-600" :placeholder="translations[currentLang].urlPlaceholder">
+            <button @click="handleUrlUpload" class="mt-2 bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded transition-colors duration-200" x-text="translations[currentLang].uploadFromUrl"></button>
+        </div>
+
         <template x-if="fileStructure">
             <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <div>
+                <div class="rtl-exception">
                     <h2 class="text-xl font-semibold mb-2" x-text="translations[currentLang].fileStructure"></h2>
                     <div id="fileTree" class="border p-4 rounded dark:bg-gray-700 dark:border-gray-600 max-h-96 overflow-y-auto">
                         <template x-for="(value, key) in fileStructure" :key="key">
@@ -89,28 +100,39 @@
                 mainPrompt: '',
                 darkMode: true,
                 currentLang: 'en',
+                urlInput: '',
                 translations: {
                     en: {
                         title: 'ZIP 2 Prompt',
                         promptLabel: 'Main Prompt',
                         fileUpload: 'Upload ZIP File',
+                        urlInput: 'Enter URL',
+                        urlPlaceholder: 'Enter GitHub URL or direct link to ZIP file',
+                        uploadFromUrl: 'Upload from URL',
                         fileStructure: 'File Structure',
                         extractButton: 'Extract Selected Files',
                         mergedContent: 'Merged Content',
                         downloadButton: 'Download Merged Content',
                         copyToClipboard: 'Copy to Clipboard',
-                        copiedToClipboard: 'Copied to Clipboard'
+                        copiedToClipboard: 'Copied to Clipboard',
+                        uploadError: 'Error uploading file',
+                        extractError: 'Error extracting files'
                     },
                     ar: {
                         title: 'ZIP 2 Prompt',
                         promptLabel: 'البرومبت الرئيسي',
                         fileUpload: 'رفع ملف ZIP',
+                        urlInput: 'أدخل الرابط',
+                        urlPlaceholder: 'أدخل رابط GitHub أو رابط مباشر لملف ZIP',
+                        uploadFromUrl: 'رفع من الرابط',
                         fileStructure: 'هيكل الملفات',
                         extractButton: 'استخراج الملفات المحددة',
                         mergedContent: 'المحتوى المدمج',
                         downloadButton: 'تنزيل المحتوى المدمج',
                         copyToClipboard: 'نسخ إلى الحافظة',
-                        copiedToClipboard: 'تم النسخ إلى الحافظة'
+                        copiedToClipboard: 'تم النسخ إلى الحافظة',
+                        uploadError: 'خطأ في رفع الملف',
+                        extractError: 'خطأ في استخراج الملفات'
                     }
                 },
 
@@ -125,8 +147,20 @@
 
                 async handleFileUpload(event) {
                     const file = event.target.files[0];
+                    await this.uploadFile(file);
+                },
+
+                async handleUrlUpload() {
+                    await this.uploadFile(null, this.urlInput);
+                },
+
+        async uploadFile(file = null, url = null) {
                     const formData = new FormData();
-                    formData.append('zipFile', file);
+                    if (file) {
+                        formData.append('zipFile', file);
+                    } else if (url) {
+                        formData.append('url', url);
+                    }
 
                     try {
                         const response = await fetch('/upload', {
@@ -152,7 +186,12 @@
 
                 async handleExtract() {
                     const formData = new FormData();
-                    formData.append('zipFile', document.querySelector('input[type="file"]').files[0]);
+                    const fileInput = document.querySelector('input[type="file"]');
+                    if (fileInput && fileInput.files[0]) {
+                        formData.append('zipFile', fileInput.files[0]);
+                    } else if (this.urlInput) {
+                        formData.append('url', this.urlInput);
+                    }
                     formData.append('files', JSON.stringify(this.selectedFiles));
 
                     try {
