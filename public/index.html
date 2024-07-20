@@ -45,6 +45,7 @@
         <div class="mb-6">
             <label :for="translations[currentLang].urlInput" class="block mb-2 font-semibold" x-text="translations[currentLang].urlInput"></label>
             <input type="text" :id="translations[currentLang].urlInput" x-model="urlInput" class="w-full p-2 border rounded dark:bg-gray-700 dark:border-gray-600" :placeholder="translations[currentLang].urlPlaceholder">
+            <input type="text" :id="translations[currentLang].branchInput" x-model="branchInput" class="w-full mt-2 p-2 border rounded dark:bg-gray-700 dark:border-gray-600" :placeholder="translations[currentLang].branchPlaceholder">
             <button @click="handleUrlUpload" class="mt-2 bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded transition-colors duration-200" x-text="translations[currentLang].uploadFromUrl"></button>
         </div>
 
@@ -101,13 +102,16 @@
                 darkMode: true,
                 currentLang: 'en',
                 urlInput: '',
+                branchInput: '',
                 translations: {
                     en: {
                         title: 'ZIP 2 Prompt',
                         promptLabel: 'Main Prompt',
                         fileUpload: 'Upload ZIP File',
                         urlInput: 'Enter URL',
-                        urlPlaceholder: 'Enter GitHub URL or direct link to ZIP file',
+                        urlPlaceholder: 'Enter GitHub repository URL (e.g., https://github.com/username/repo.git)',
+                        branchInput: 'Enter Branch Name',
+                        branchPlaceholder: 'Enter branch name (default: main)',
                         uploadFromUrl: 'Upload from URL',
                         fileStructure: 'File Structure',
                         extractButton: 'Extract Selected Files',
@@ -118,12 +122,15 @@
                         uploadError: 'Error uploading file',
                         extractError: 'Error extracting files'
                     },
+
                     ar: {
                         title: 'ZIP 2 Prompt',
                         promptLabel: 'البرومبت الرئيسي',
                         fileUpload: 'رفع ملف ZIP',
                         urlInput: 'أدخل الرابط',
-                        urlPlaceholder: 'أدخل رابط GitHub أو رابط مباشر لملف ZIP',
+                        urlPlaceholder: 'أدخل رابط مستودع GitHub (مثال: https://github.com/username/repo.git)',
+                        branchInput: 'أدخل اسم الفرع',
+                        branchPlaceholder: 'أدخل اسم الفرع (الافتراضي: main)',
                         uploadFromUrl: 'رفع من الرابط',
                         fileStructure: 'هيكل الملفات',
                         extractButton: 'استخراج الملفات المحددة',
@@ -151,15 +158,18 @@
                 },
 
                 async handleUrlUpload() {
-                    await this.uploadFile(null, this.urlInput);
+                    await this.uploadFile(null, this.urlInput, this.branchInput);
                 },
 
-        async uploadFile(file = null, url = null) {
+                async uploadFile(file = null, url = null, branch = null) {
                     const formData = new FormData();
                     if (file) {
                         formData.append('zipFile', file);
                     } else if (url) {
                         formData.append('url', url);
+                        if (branch) {
+                            formData.append('branch', branch);
+                        }
                     }
 
                     try {
@@ -167,11 +177,14 @@
                             method: 'POST',
                             body: formData
                         });
-                        if (!response.ok) throw new Error('Network response was not ok');
+                        if (!response.ok) {
+                            const error = await response.json();
+                            throw new Error(error.error || 'Unknown error');
+                        }
                         this.fileStructure = await response.json();
                     } catch (error) {
                         console.error('Error uploading file:', error);
-                        alert(this.translations[this.currentLang].uploadError);
+                        alert(this.translations[this.currentLang].uploadError + ': ' + error.message);
                     }
                 },
 
@@ -191,6 +204,9 @@
                         formData.append('zipFile', fileInput.files[0]);
                     } else if (this.urlInput) {
                         formData.append('url', this.urlInput);
+                        if (this.branchInput) {
+                            formData.append('branch', this.branchInput);
+                        }
                     }
                     formData.append('files', JSON.stringify(this.selectedFiles));
 
@@ -199,12 +215,15 @@
                             method: 'POST',
                             body: formData
                         });
-                        if (!response.ok) throw new Error('Network response was not ok');
+                        if (!response.ok) {
+                            const error = await response.json();
+                            throw new Error(error.error || 'Unknown error');
+                        }
                         const result = await response.json();
                         this.mergedContent = this.mainPrompt + '\n\n' + result.content;
                     } catch (error) {
                         console.error('Error extracting files:', error);
-                        alert(this.translations[this.currentLang].extractError);
+                        alert(this.translations[this.currentLang].extractError + ': ' + error.message);
                     }
                 },
 
