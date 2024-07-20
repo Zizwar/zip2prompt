@@ -3,6 +3,10 @@ import { serve } from '@hono/node-server'
 import { cors } from 'hono/cors'
 import { serveStatic } from "@hono/node-server/serve-static";
 import AdmZip from 'adm-zip'
+import { execSync } from 'child_process'
+import fs from 'fs'
+import path from 'path'
+import os from 'os'
 
 const app = new Hono()
 
@@ -15,13 +19,23 @@ async function fetchFileFromUrl(url) {
   return await response.arrayBuffer();
 }
 
-async function fetchFromGitHub(url) {
-  const apiUrl = url.replace('github.com', 'api.github.com/repos').replace('/blob/', '/contents/');
-  const response = await fetch(apiUrl, {
-    headers: { 'Accept': 'application/vnd.github.v3.raw' }
-  });
-  if (!response.ok) throw new Error(`GitHub API error! status: ${response.status}`);
-  return await response.arrayBuffer();
+async function fetchFromGitHub(url, branch = 'main') {
+  const tempDir = fs.mkdtempSync(path.join(os.tmpdir(), 'github-'));
+  try {
+    execSync(`git clone --depth 1 --branch ${branch} ${url} ${tempDir}`, { stdio: 'inherit' });
+    
+    const zip = new AdmZip();
+    const files = fs.readdirSync(tempDir);
+    files.forEach(file => {
+      if (file !== '.git') {
+        zip.addLocalFolder(path.join(tempDir, file), file);
+      }
+    });
+    
+    return zip.toBuffer();
+  } finally {
+    fs.rmSync(tempDir, { recursive: true, force: true });
+  }
 }
 
 app.post('/upload', async (c) => {
@@ -29,13 +43,14 @@ app.post('/upload', async (c) => {
     const formData = await c.req.formData()
     const file = formData.get('zipFile')
     const url = formData.get('url')
+    const branch = formData.get('branch') || 'main'
     
     let buffer;
     if (file) {
       buffer = await file.arrayBuffer()
     } else if (url) {
       if (url.includes('github.com')) {
-        buffer = await fetchFromGitHub(url);
+        buffer = await fetchFromGitHub(url, branch);
       } else {
         buffer = await fetchFileFromUrl(url);
       }
@@ -49,7 +64,7 @@ app.post('/upload', async (c) => {
     return c.json(fileStructure)
   } catch (error) {
     console.error('Error in /upload:', error)
-    return c.json({ error: 'Internal server error' }, 500)
+    return c.json({ error: 'Internal server error: ' + error.message }, 500)
   }
 })
 
@@ -59,6 +74,7 @@ app.post('/extract', async (c) => {
     const filesString = formData.get('files')
     const file = formData.get('zipFile')
     const url = formData.get('url')
+    const branch = formData.get('branch') || 'main'
     
     if ((!file && !url) || !filesString) return c.json({ error: 'Missing file/URL or file list' }, 400)
     const files = JSON.parse(filesString)
@@ -68,7 +84,7 @@ app.post('/extract', async (c) => {
       buffer = await file.arrayBuffer()
     } else if (url) {
       if (url.includes('github.com')) {
-        buffer = await fetchFromGitHub(url);
+        buffer = await fetchFromGitHub(url, branch);
       } else {
         buffer = await fetchFileFromUrl(url);
       }
@@ -94,7 +110,7 @@ app.post('/extract', async (c) => {
     return c.json({ content: extractedContent })
   } catch (error) {
     console.error('Error in /extract:', error)
-    return c.json({ error: 'Internal server error' }, 500)
+    return c.json({ error: 'Internal server error: ' + error.message }, 500)
   }
 })
 
