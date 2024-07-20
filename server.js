@@ -9,13 +9,40 @@ const app = new Hono()
 app.use('/*', cors())
 app.use("/", serveStatic({ root: "./public" }));
 
+async function fetchFileFromUrl(url) {
+  const response = await fetch(url);
+  if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
+  return await response.arrayBuffer();
+}
+
+async function fetchFromGitHub(url) {
+  const apiUrl = url.replace('github.com', 'api.github.com/repos').replace('/blob/', '/contents/');
+  const response = await fetch(apiUrl, {
+    headers: { 'Accept': 'application/vnd.github.v3.raw' }
+  });
+  if (!response.ok) throw new Error(`GitHub API error! status: ${response.status}`);
+  return await response.arrayBuffer();
+}
+
 app.post('/upload', async (c) => {
   try {
     const formData = await c.req.formData()
     const file = formData.get('zipFile')
+    const url = formData.get('url')
     
-    if (!file) return c.json({ error: 'No file uploaded' }, 400)
-    const buffer = await file.arrayBuffer()
+    let buffer;
+    if (file) {
+      buffer = await file.arrayBuffer()
+    } else if (url) {
+      if (url.includes('github.com')) {
+        buffer = await fetchFromGitHub(url);
+      } else {
+        buffer = await fetchFileFromUrl(url);
+      }
+    } else {
+      return c.json({ error: 'No file or URL provided' }, 400)
+    }
+
     const zip = new AdmZip(Buffer.from(buffer))
     const zipEntries = zip.getEntries()
     const fileStructure = buildFileStructure(zipEntries)
@@ -31,10 +58,22 @@ app.post('/extract', async (c) => {
     const formData = await c.req.formData()
     const filesString = formData.get('files')
     const file = formData.get('zipFile')
+    const url = formData.get('url')
     
-    if (!file || !filesString) return c.json({ error: 'Missing file or file list' }, 400)
+    if ((!file && !url) || !filesString) return c.json({ error: 'Missing file/URL or file list' }, 400)
     const files = JSON.parse(filesString)
-    const buffer = await file.arrayBuffer()
+
+    let buffer;
+    if (file) {
+      buffer = await file.arrayBuffer()
+    } else if (url) {
+      if (url.includes('github.com')) {
+        buffer = await fetchFromGitHub(url);
+      } else {
+        buffer = await fetchFileFromUrl(url);
+      }
+    }
+
     const zip = new AdmZip(Buffer.from(buffer))
     const extractedContent = files.map(file => {
       const entry = zip.getEntry(file)
