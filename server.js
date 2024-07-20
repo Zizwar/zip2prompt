@@ -25,12 +25,20 @@ async function fetchFromGitHub(url, branch = 'main') {
     execSync(`git clone --depth 1 --branch ${branch} ${url} ${tempDir}`, { stdio: 'inherit' });
     
     const zip = new AdmZip();
-    const files = fs.readdirSync(tempDir);
-    files.forEach(file => {
-      if (file !== '.git') {
-        zip.addLocalFolder(path.join(tempDir, file), file);
+    const addFilesToZip = (dir, zipPath = '') => {
+      const files = fs.readdirSync(dir, { withFileTypes: true });
+      for (const file of files) {
+        const filePath = path.join(dir, file.name);
+        if (file.isDirectory()) {
+          if (file.name !== '.git') {
+            addFilesToZip(filePath, path.join(zipPath, file.name));
+          }
+        } else {
+          zip.addLocalFile(filePath, zipPath);
+        }
       }
-    });
+    };
+    addFilesToZip(tempDir);
     
     return zip.toBuffer();
   } finally {
