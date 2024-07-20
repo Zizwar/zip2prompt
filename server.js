@@ -3,6 +3,7 @@ import { serve } from '@hono/node-server'
 import { cors } from 'hono/cors'
 import { serveStatic } from "@hono/node-server/serve-static";
 import AdmZip from 'adm-zip'
+import { execSync } from 'child_process'
 import fs from 'fs'
 import path from 'path'
 import os from 'os'
@@ -19,28 +20,30 @@ async function fetchFileFromUrl(url) {
 }
 
 async function fetchFromGitHub(url, branch = 'main') {
-  // Extract owner and repo from the GitHub URL
-  const match = url.match(/github\.com\/([^\/]+)\/([^\/]+)/);
-  if (!match) throw new Error('Invalid GitHub URL');
-  const [, owner, repo] = match;
-
-  console.log(`Fetching repository: ${owner}/${repo}, branch: ${branch}`);
-
-  // Construct the API URL to get the ZIP file
-  const apiUrl = `https://api.github.com/repos/${owner}/${repo}/zipball/${branch}`;
-
-  const response = await fetch(apiUrl, {
-    headers: {
-      'Accept': 'application/vnd.github.v3+json',
-      'User-Agent': 'Zip2Prompt-App'
-    }
-  });
-
-  if (!response.ok) {
-    throw new Error(`GitHub API error! status: ${response.status}`);
+  const tempDir = fs.mkdtempSync(path.join(os.tmpdir(), 'github-'));
+  try {
+    execSync(`git clone --depth 1 --branch ${branch} ${url} ${tempDir}`, { stdio: 'inherit' });
+    
+    const zip = new AdmZip();
+    const addFilesToZip = (dir, zipPath = '') => {
+      const files = fs.readdirSync(dir, { withFileTypes: true });
+      for (const file of files) {
+        const filePath = path.join(dir, file.name);
+        if (file.isDirectory()) {
+          if (file.name !== '.git') {
+            addFilesToZip(filePath, path.join(zipPath, file.name));
+          }
+        } else {
+          zip.addLocalFile(filePath, zipPath);
+        }
+      }
+    };
+    addFilesToZip(tempDir);
+    
+    return zip.toBuffer();
+  } finally {
+    fs.rmSync(tempDir, { recursive: true, force: true });
   }
-
-  return await response.arrayBuffer();
 }
 
 app.post('/upload', async (c) => {
@@ -80,7 +83,6 @@ app.post('/extract', async (c) => {
     const file = formData.get('zipFile')
     const url = formData.get('url')
     const branch = formData.get('branch') || 'main'
-    const includeFileStructure = formData.get('includeFileStructure') === 'true'
     
     if ((!file && !url) || !filesString) return c.json({ error: 'Missing file/URL or file list' }, 400)
     const files = JSON.parse(filesString)
@@ -97,9 +99,6 @@ app.post('/extract', async (c) => {
     }
 
     const zip = new AdmZip(Buffer.from(buffer))
-    const zipEntries = zip.getEntries()
-    const fileStructure = buildFileStructure(zipEntries)
-
     const extractedContent = files.map(file => {
       const entry = zip.getEntry(file)
       if (entry) {
@@ -116,14 +115,7 @@ app.post('/extract', async (c) => {
       }
       return `// ${file}\nFile not found in the ZIP archive.`
     }).join('\n\n')
-
-    let responseContent = extractedContent;
-    if (includeFileStructure) {
-      const structureText = getFileStructureText(fileStructure);
-      responseContent = `File Structure:\n${structureText}\n\nFile Contents:\n${extractedContent}`;
-    }
-
-    return c.json({ content: responseContent })
+    return c.json({ content: extractedContent })
   } catch (error) {
     console.error('Error in /extract:', error)
     return c.json({ error: 'Internal server error: ' + error.message }, 500)
@@ -155,24 +147,10 @@ function buildFileStructure(entries) {
   return structure
 }
 
-function getFileStructureText(structure, indent = '') {
-  let text = '';
-  for (const [name, item] of Object.entries(structure)) {
-    if (item.type === 'file') {
-      text += `${indent}${name}\n`;
-    } else {
-      text += `${indent}${name}/\n`;
-      text += getFileStructureText(item.children, indent + '  ');
-    }
-  }
-  return text;
-}
-
 // Start the server
-const port = process.env.PORT || 3000;
 serve({
   fetch: app.fetch,
-  port
+  port: 3000
 })
 
-console.log(`Server is running on http://localhost:${port}`)
+console.log('Server is running on http://localhost:3000')
