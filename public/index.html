@@ -19,40 +19,40 @@
       x-cloak
       :dir="currentLang === 'ar' ? 'rtl' : 'ltr'">
     <div class="container mx-auto p-4">
-        <header class="flex justify-between items-center mb-6">
-            <h1 class="text-3xl font-bold" x-text="translations[currentLang].title"></h1>
+        <header class="flex justify-between items-center mb-6 bg-blue-600 dark:bg-blue-800 p-4 rounded-lg">
+            <h1 class="text-3xl font-bold text-white" x-text="translations[currentLang].title"></h1>
             <div class="space-x-2 rtl:space-x-reverse">
-                <button @click="toggleDarkMode" class="px-3 py-1 rounded bg-gray-200 dark:bg-gray-700">
+                <button @click="toggleDarkMode" class="px-3 py-1 rounded bg-blue-500 dark:bg-blue-700 text-white">
                     <i :class="darkMode ? 'fas fa-sun' : 'fas fa-moon'"></i>
                 </button>
-                <select x-model="currentLang" class="px-3 py-1 rounded bg-gray-200 dark:bg-gray-700">
+                <select x-model="currentLang" class="px-3 py-1 rounded bg-blue-500 dark:bg-blue-700 text-white">
                     <option value="en">English</option>
                     <option value="ar">العربية</option>
                 </select>
             </div>
         </header>
 
-        <div class="mb-6">
+        <div class="mb-6 bg-white dark:bg-gray-700 p-4 rounded-lg shadow">
             <label :for="translations[currentLang].promptLabel" class="block mb-2 font-semibold" x-text="translations[currentLang].promptLabel"></label>
-            <textarea :id="translations[currentLang].promptLabel" x-model="mainPrompt" class="w-full p-2 border rounded dark:bg-gray-700 dark:border-gray-600" rows="3"></textarea>
+            <textarea :id="translations[currentLang].promptLabel" x-model="mainPrompt" class="w-full p-2 border rounded dark:bg-gray-600 dark:border-gray-500" rows="3"></textarea>
         </div>
-        
-        <div class="mb-6">
-            <div class="flex border-b">
-                <button @click="activeTab = 'file'" :class="{ 'border-b-2 border-blue-500': activeTab === 'file' }" class="py-2 px-4">
+
+        <div class="mb-6 bg-white dark:bg-gray-700 p-4 rounded-lg shadow">
+            <div class="flex border-b border-gray-200 dark:border-gray-600">
+                <button @click="activeTab = 'file'" :class="{ 'border-b-2 border-blue-500': activeTab === 'file' }" class="py-2 px-4 text-blue-600 dark:text-blue-400">
                     <i class="fas fa-file-archive mr-2"></i>
                     <span x-text="translations[currentLang].fileTab"></span>
                 </button>
-                <button @click="activeTab = 'url'" :class="{ 'border-b-2 border-blue-500': activeTab === 'url' }" class="py-2 px-4">
+                <button @click="activeTab = 'url'" :class="{ 'border-b-2 border-blue-500': activeTab === 'url' }" class="py-2 px-4 text-blue-600 dark:text-blue-400">
                     <i class="fas fa-link mr-2"></i>
                     <span x-text="translations[currentLang].urlTab"></span>
                 </button>
-                <button @click="activeTab = 'github'" :class="{ 'border-b-2 border-blue-500': activeTab === 'github' }" class="py-2 px-4">
+                <button @click="activeTab = 'github'" :class="{ 'border-b-2 border-blue-500': activeTab === 'github' }" class="py-2 px-4 text-blue-600 dark:text-blue-400">
                     <i class="fab fa-github mr-2"></i>
                     <span x-text="translations[currentLang].githubTab"></span>
                 </button>
             </div>
-            
+
             <div x-show="activeTab === 'file'" class="mt-4">
                 <div 
                     @dragover.prevent="$event.target.classList.add('bg-blue-100')"
@@ -60,7 +60,7 @@
                     @drop.prevent="handleFileDrop($event)"
                     class="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center cursor-pointer hover:bg-gray-50 transition duration-150"
                 >
-                    <i class="fas fa-cloud-upload-alt text-4xl mb-4"></i>
+                    <i class="fas fa-cloud-upload-alt text-4xl mb-4 text-blue-500"></i>
                     <p x-text="translations[currentLang].dragDropText"></p>
                     <input type="file" @change="handleFileUpload" accept=".zip" class="hidden" id="fileInput">
                     <label for="fileInput" class="mt-4 inline-block bg-blue-500 text-white px-4 py-2 rounded cursor-pointer hover:bg-blue-600 transition duration-150">
@@ -68,18 +68,18 @@
                     </label>
                 </div>
             </div>
-            
+
             <div x-show="activeTab === 'url'" class="mt-4">
-                <input type="text" x-model="urlInput" :placeholder="translations[currentLang].urlPlaceholder" class="w-full p-2 border rounded">
+                <input type="text" x-model="urlInput" :placeholder="translations[currentLang].urlPlaceholder" class="w-full p-2 border rounded dark:bg-gray-600 dark:border-gray-500">
                 <button @click="handleUrlUpload" class="mt-2 bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded transition duration-150">
                     <i class="fas fa-upload mr-2"></i>
                     <span x-text="translations[currentLang].uploadFromUrl"></span>
                 </button>
             </div>
-            
+
             <div x-show="activeTab === 'github'" class="mt-4">
-                <input type="text" x-model="githubUrl" :placeholder="translations[currentLang].githubUrlPlaceholder" class="w-full p-2 border rounded mb-2">
-                <input type="text" x-model="branchInput" :placeholder="translations[currentLang].branchPlaceholder" class="w-full p-2 border rounded">
+                <input type="text" x-model="githubUrl" :placeholder="translations[currentLang].githubUrlPlaceholder" class="w-full p-2 border rounded dark:bg-gray-600 dark:border-gray-500 mb-2">
+                <input type="text" x-model="branchInput" :placeholder="translations[currentLang].branchPlaceholder" class="w-full p-2 border rounded dark:bg-gray-600 dark:border-gray-500">
                 <button @click="handleGithubUpload" class="mt-2 bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded transition duration-150">
                     <i class="fab fa-github mr-2"></i>
                     <span x-text="translations[currentLang].uploadFromGithub"></span>
@@ -87,11 +87,28 @@
             </div>
         </div>
 
+        <div class="mb-6 bg-white dark:bg-gray-700 p-4 rounded-lg shadow" x-show="uploadedFiles.length > 0">
+            <h2 class="text-xl font-semibold mb-2" x-text="translations[currentLang].uploadedFiles"></h2>
+            <ul>
+                <template x-for="file in uploadedFiles" :key="file">
+                    <li class="flex justify-between items-center py-2">
+                        <button @click="reopenFile(file)" class="text-blue-500 hover:text-blue-700">
+                            <i class="fas fa-folder-open mr-2"></i>
+                            <span x-text="file"></span>
+                        </button>
+                        <button @click="deleteUploadedFile(file)" class="text-red-500 hover:text-red-700">
+                            <i class="fas fa-trash"></i>
+                        </button>
+                    </li>
+                </template>
+            </ul>
+        </div>
+
         <template x-if="fileStructure">
             <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <div class="rtl-exception">
+                <div class="rtl-exception bg-white dark:bg-gray-700 p-4 rounded-lg shadow">
                     <h2 class="text-xl font-semibold mb-2" x-text="translations[currentLang].fileStructure"></h2>
-                    <div id="fileTree" class="border p-4 rounded dark:bg-gray-700 dark:border-gray-600 max-h-96 overflow-y-auto">
+                    <div id="fileTree" class="border p-4 rounded dark:bg-gray-600 dark:border-gray-500 max-h-96 overflow-y-auto">
                         <template x-for="(value, key) in fileStructure" :key="key">
                             <div x-html="renderFileTree(key, value, '')"></div>
                         </template>
@@ -99,7 +116,7 @@
                     <div class="flex justify-between mt-4">
                         <button 
                             @click="handleExtract"
-                            class="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded transition duration-150"
+                            class="bg-green-500 hover:bg-green-600 text-white px-4 py-2 rounded transition duration-150"
                         >
                             <i class="fas fa-file-export mr-2"></i>
                             <span x-text="translations[currentLang].extractButton"></span>
@@ -110,13 +127,13 @@
                         </div>
                     </div>
                 </div>
-                <div>
+                <div class="bg-white dark:bg-gray-700 p-4 rounded-lg shadow">
                     <h2 class="text-xl font-semibold mb-2" x-text="translations[currentLang].mergedContent"></h2>
                     <div class="relative">
                         <textarea 
                             x-model="mergedContent"
                             readonly
-                            class="w-full h-96 p-2 border rounded dark:bg-gray-700 dark:border-gray-600 resize-none"
+                            class="w-full h-96 p-2 border rounded dark:bg-gray-600 dark:border-gray-500 resize-none"
                         ></textarea>
                         <button 
                             @click="copyToClipboard"
@@ -129,7 +146,7 @@
                     <template x-if="mergedContent">
                         <button 
                             @click="downloadMergedContent"
-                            class="mt-2 bg-green-500 hover:bg-green-600 text-white px-4 py-2 rounded transition duration-150"
+                            class="mt-2 bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded transition duration-150"
                         >
                             <i class="fas fa-download mr-2"></i>
                             <span x-text="translations[currentLang].downloadButton"></span>
@@ -154,6 +171,8 @@
                 branchInput: '',
                 activeTab: 'file',
                 includeFileStructure: false,
+                uploadedFiles: [],
+                currentFileName: '',
                 translations: {
                     en: {
                         title: 'ZIP 2 Prompt',
@@ -179,14 +198,15 @@
                         copiedToClipboard: 'Copied to Clipboard',
                         uploadError: 'Error uploading file',
                         extractError: 'Error extracting files',
-                        includeStructure: 'Include file structure'
+                        includeStructure: 'Include file structure',
+                        uploadedFiles: 'Uploaded Files'
                     },
                     ar: {
                         title: 'ZIP 2 Prompt',
                         promptLabel: 'البرومبت الرئيسي',
                         fileTab: 'رفع ملف',
-                        urlTab: 'رابط',
-                        githubTab: 'GitHub',
+                        urlTab: 'رابط URL',
+                        githubTab: 'جيت هب',
                         dragDropText: 'اسحب وأفلت ملف ZIP هنا، أو انقر للاختيار',
                         selectFile: 'اختر ملف',
                         fileUpload: 'رفع ملف ZIP',
@@ -205,17 +225,21 @@
                         copiedToClipboard: 'تم النسخ إلى الحافظة',
                         uploadError: 'خطأ في رفع الملف',
                         extractError: 'خطأ في استخراج الملفات',
-                        includeStructure: 'تضمين هيكل الملفات'
+                        includeStructure: 'تضمين هيكل الملفات',
+                        uploadedFiles: 'الملفات المرفوعة'
                     }
                 },
 
                 init() {
+                    this.darkMode = localStorage.getItem('darkMode') === 'true';
                     this.toggleDarkMode();
+                    this.fetchUploadedFiles();
                 },
 
                 toggleDarkMode() {
                     this.darkMode = !this.darkMode;
-                    document.body.classList.toggle('dark', this.darkMode);
+                    localStorage.setItem('darkMode', this.darkMode);
+                    document.documentElement.classList.toggle('dark', this.darkMode);
                 },
 
                 async handleFileUpload(event) {
@@ -238,8 +262,7 @@
                     await this.uploadFile(null, this.githubUrl, this.branchInput);
                 },
 
-                
-async uploadFile(file = null, url = null, branch = null) {
+                async uploadFile(file = null, url = null, branch = null) {
                     const formData = new FormData();
                     if (file) {
                         formData.append('zipFile', file);
@@ -259,10 +282,58 @@ async uploadFile(file = null, url = null, branch = null) {
                             const error = await response.json();
                             throw new Error(error.error || 'Unknown error');
                         }
-                        this.fileStructure = await response.json();
+                        const result = await response.json();
+                        this.fileStructure = result.fileStructure;
+                        this.currentFileName = result.filename;
+                        this.fetchUploadedFiles();
                     } catch (error) {
                         console.error('Error uploading file:', error);
                         alert(this.translations[this.currentLang].uploadError + ': ' + error.message);
+                    }
+                },
+
+                async fetchUploadedFiles() {
+                    try {
+                        const response = await fetch('/uploads');
+                        if (!response.ok) {
+                            throw new Error('Failed to fetch uploaded files');
+                        }
+                        this.uploadedFiles = await response.json();
+                    } catch (error) {
+                        console.error('Error fetching uploaded files:', error);
+                    }
+                },
+
+                async deleteUploadedFile(filename) {
+                    try {
+                        const response = await fetch(`/upload/${filename}`, {
+                            method: 'DELETE'
+                        });
+                        if (!response.ok) {
+                            throw new Error('Failed to delete file');
+                        }
+                        this.fetchUploadedFiles();
+                        if (this.currentFileName === filename) {
+                            this.fileStructure = null;
+                            this.currentFileName = '';
+                        }
+                    } catch (error) {
+                        console.error('Error deleting file:', error);
+                    }
+                },
+
+                async reopenFile(filename) {
+                    try {
+                        const response = await fetch(`/reopen/${filename}`);
+                        if (!response.ok) {
+                            throw new Error('Failed to reopen file');
+                        }
+                        const result = await response.json();
+                        this.fileStructure = result.fileStructure;
+                        this.currentFileName = result.filename;
+                        this.selectedFiles = [];
+                    } catch (error) {
+                        console.error('Error reopening file:', error);
                     }
                 },
 
@@ -275,20 +346,37 @@ async uploadFile(file = null, url = null, branch = null) {
                     }
                 },
 
+                toggleAllInDirectory(directory) {
+                    const filesInDirectory = this.getFilesInDirectory(directory);
+                    const allSelected = filesInDirectory.every(file => this.selectedFiles.includes(file));
+                    
+                    if (allSelected) {
+                        this.selectedFiles = this.selectedFiles.filter(file => !filesInDirectory.includes(file));
+                    } else {
+                        this.selectedFiles = [...new Set([...this.selectedFiles, ...filesInDirectory])];
+                    }
+                },
+
+                getFilesInDirectory(directory) {
+                    const files = [];
+                    const traverse = (obj, path = '') => {
+                        for (const [key, value] of Object.entries(obj)) {
+                            const newPath = path ? `${path}/${key}` : key;
+                            if (value.type === 'file') {
+                                files.push(newPath);
+                            } else if (value.type === 'directory') {
+                                traverse(value.children, newPath);
+                            }
+                        }
+                    };
+                    traverse(directory);
+                    return files;
+                },
+
                 async handleExtract() {
                     const formData = new FormData();
-                    const fileInput = document.querySelector('input[type="file"]');
-                    if (fileInput && fileInput.files[0]) {
-                        formData.append('zipFile', fileInput.files[0]);
-                    } else if (this.urlInput) {
-                        formData.append('url', this.urlInput);
-                    } else if (this.githubUrl) {
-                        formData.append('url', this.githubUrl);
-                        if (this.branchInput) {
-                            formData.append('branch', this.branchInput);
-                        }
-                    }
                     formData.append('files', JSON.stringify(this.selectedFiles));
+                    formData.append('filename', this.currentFileName);
 
                     try {
                         const response = await fetch('/extract', {
@@ -330,7 +418,7 @@ async uploadFile(file = null, url = null, branch = null) {
                     const url = URL.createObjectURL(blob);
                     const a = document.createElement('a');
                     a.href = url;
-                    a.download = 'merged_content.txt';
+                    a.download = `${this.currentFileName}_merged_content.txt`;
                     a.click();
                 },
 
@@ -345,24 +433,26 @@ async uploadFile(file = null, url = null, branch = null) {
                     if (item.type === 'file') {
                         return `
                             <div class="flex items-center mb-1">
-                                <input type="checkbox" value="${item.path}" @change="toggleFile('${item.path}')" class="mr-2">
+                                <input type="checkbox" value="${item.path}" @change="toggleFile('${item.path}')" :checked="selectedFiles.includes('${item.path}')" class="mr-2">
                                 <i class="fas fa-file text-blue-500 mr-2"></i>
                                 <span>${name}</span>
                             </div>
                         `;
                     } else {
-                        let html = `
+                        const filesInDir = this.getFilesInDirectory(item);
+                        const allSelected = filesInDir.every(file => this.selectedFiles.includes(file));
+                        return `
                             <div class="mb-1">
+                                <input type="checkbox" @change="toggleAllInDirectory(${JSON.stringify(item)})" :checked="${allSelected}" class="mr-2">
                                 <i class="fas fa-folder text-yellow-500 mr-2"></i>
                                 <span class="font-semibold">${name}</span>
                             </div>
                             <div class="pl-4">
+                                ${Object.entries(item.children).map(([childName, childItem]) => 
+                                    this.renderFileTree(childName, childItem, fullPath)
+                                ).join('')}
+                            </div>
                         `;
-                        for (const [childName, childItem] of Object.entries(item.children)) {
-                            html += this.renderFileTree(childName, childItem, fullPath);
-                        }
-                        html += '</div>';
-                        return html;
                     }
                 }
             };
