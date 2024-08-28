@@ -13,6 +13,11 @@ const app = new Hono()
 app.use('/*', cors())
 app.use("/", serveStatic({ root: "./public" }));
 
+const uploadsDir = path.join(process.cwd(), 'uploads');
+if (!fs.existsSync(uploadsDir)) {
+    fs.mkdirSync(uploadsDir);
+}
+
 async function fetchFileFromUrl(url) {
   const response = await fetch(url);
   if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
@@ -23,7 +28,7 @@ async function fetchFromGitHub(url, branch = 'main') {
   const tempDir = fs.mkdtempSync(path.join(os.tmpdir(), 'github-'));
   try {
     execSync(`git clone --depth 1 --branch ${branch} ${url} ${tempDir}`, { stdio: 'inherit' });
-    
+
     const zip = new AdmZip();
     const addFilesToZip = (dir, zipPath = '') => {
       const files = fs.readdirSync(dir, { withFileTypes: true });
@@ -39,7 +44,7 @@ async function fetchFromGitHub(url, branch = 'main') {
       }
     };
     addFilesToZip(tempDir);
-    
+
     return zip.toBuffer();
   } finally {
     fs.rmSync(tempDir, { recursive: true, force: true });
@@ -52,53 +57,72 @@ app.post('/upload', async (c) => {
     const file = formData.get('zipFile')
     const url = formData.get('url')
     const branch = formData.get('branch') || 'main'
-    
+
     let buffer;
+    let filename;
     if (file) {
       buffer = await file.arrayBuffer()
+      filename = file.name;
     } else if (url) {
       if (url.includes('github.com')) {
         buffer = await fetchFromGitHub(url, branch);
+        filename = url.split('/').pop() + '.zip';
       } else {
         buffer = await fetchFileFromUrl(url);
+        filename = url.split('/').pop();
       }
     } else {
       return c.json({ error: 'No file or URL provided' }, 400)
     }
 
+    const filePath = path.join(uploadsDir, filename);
+    fs.writeFileSync(filePath, Buffer.from(buffer));
+
     const zip = new AdmZip(Buffer.from(buffer))
     const zipEntries = zip.getEntries()
     const fileStructure = buildFileStructure(zipEntries)
-    return c.json(fileStructure)
+    return c.json({ fileStructure, filename })
   } catch (error) {
     console.error('Error in /upload:', error)
     return c.json({ error: 'Internal server error: ' + error.message }, 500)
   }
 })
 
+app.get('/reopen/:filename', async (c) => {
+  try {
+    const filename = c.req.param('filename');
+    const filePath = path.join(uploadsDir, filename);
+    
+    if (!fs.existsSync(filePath)) {
+      return c.json({ error: 'File not found' }, 404);
+    }
+
+    const zip = new AdmZip(filePath);
+    const zipEntries = zip.getEntries();
+    const fileStructure = buildFileStructure(zipEntries);
+    
+    return c.json({ fileStructure, filename });
+  } catch (error) {
+    console.error('Error in /reopen:', error);
+    return c.json({ error: 'Internal server error: ' + error.message }, 500);
+  }
+});
+
 app.post('/extract', async (c) => {
   try {
     const formData = await c.req.formData()
     const filesString = formData.get('files')
-    const file = formData.get('zipFile')
-    const url = formData.get('url')
-    const branch = formData.get('branch') || 'main'
-    
-    if ((!file && !url) || !filesString) return c.json({ error: 'Missing file/URL or file list' }, 400)
+    const filename = formData.get('filename')
+
+    if (!filename || !filesString) return c.json({ error: 'Missing filename or file list' }, 400)
     const files = JSON.parse(filesString)
 
-    let buffer;
-    if (file) {
-      buffer = await file.arrayBuffer()
-    } else if (url) {
-      if (url.includes('github.com')) {
-        buffer = await fetchFromGitHub(url, branch);
-      } else {
-        buffer = await fetchFileFromUrl(url);
-      }
+    const filePath = path.join(uploadsDir, filename);
+    if (!fs.existsSync(filePath)) {
+      return c.json({ error: 'File not found' }, 404);
     }
 
-    const zip = new AdmZip(Buffer.from(buffer))
+    const zip = new AdmZip(filePath)
     const extractedContent = files.map(file => {
       const entry = zip.getEntry(file)
       if (entry) {
@@ -121,6 +145,22 @@ app.post('/extract', async (c) => {
     return c.json({ error: 'Internal server error: ' + error.message }, 500)
   }
 })
+
+app.get('/uploads', (c) => {
+  const files = fs.readdirSync(uploadsDir);
+  return c.json(files);
+});
+
+app.delete('/upload/:filename', (c) => {
+  const filename = c.req.param('filename');
+  const filePath = path.join(uploadsDir, filename);
+  if (fs.existsSync(filePath)) {
+    fs.unlinkSync(filePath);
+    return c.json({ message: 'File deleted successfully' });
+  } else {
+    return c.json({ error: 'File not found' }, 404);
+  }
+});
 
 function buildFileStructure(entries) {
   const structure = {}
@@ -150,7 +190,7 @@ function buildFileStructure(entries) {
 // Start the server
 serve({
   fetch: app.fetch,
-  port: 3000
+  port: 3001
 })
 
-console.log('Server is running on http://localhost:3000')
+console.log('Server is running on http://localhost:3001')
