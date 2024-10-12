@@ -108,6 +108,22 @@
             <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div class="rtl-exception bg-white dark:bg-gray-700 p-4 rounded-lg shadow">
                     <h2 class="text-xl font-semibold mb-2" x-text="translations[currentLang].fileStructure"></h2>
+                    <div class="mb-4">
+                        <button @click="selectAllFiles" class="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded transition duration-150 mr-2">
+                            <i class="fas fa-check-double mr-2"></i>
+                            <span x-text="translations[currentLang].selectAll"></span>
+                        </button>
+                        <button @click="deselectAllFiles" class="bg-gray-500 hover:bg-gray-600 text-white px-4 py-2 rounded transition duration-150">
+                            <i class="fas fa-times mr-2"></i>
+                            <span x-text="translations[currentLang].deselectAll"></span>
+                        </button>
+                    </div>
+                    <div class="mb-4">
+                        <label class="flex items-center">
+                            <input type="checkbox" x-model="excludeMediaFiles" class="mr-2">
+                            <span x-text="translations[currentLang].excludeMedia"></span>
+                        </label>
+                    </div>
                     <div id="fileTree" class="border p-4 rounded dark:bg-gray-600 dark:border-gray-500 max-h-96 overflow-y-auto">
                         <template x-for="(value, key) in fileStructure" :key="key">
                             <div x-html="renderFileTree(key, value, '')"></div>
@@ -173,6 +189,7 @@
                 includeFileStructure: false,
                 uploadedFiles: [],
                 currentFileName: '',
+                excludeMediaFiles: true,
                 translations: {
                     en: {
                         title: 'ZIP 2 Prompt',
@@ -199,19 +216,25 @@
                         uploadError: 'Error uploading file',
                         extractError: 'Error extracting files',
                         includeStructure: 'Include file structure',
-                        uploadedFiles: 'Uploaded Files'
+                        uploadedFiles: 'Uploaded Files',
+                        selectAll: 'Select All',
+                        deselectAll: 'Deselect All',
+                        excludeMedia: 'Exclude media files (images, videos, etc.)'
                     },
+                    ////
+
+
                     ar: {
-                        title: 'ZIP 2 Prompt',
+                        title: 'ضغط إلى برومبت',
                         promptLabel: 'البرومبت الرئيسي',
                         fileTab: 'رفع ملف',
                         urlTab: 'رابط URL',
                         githubTab: 'جيت هب',
                         dragDropText: 'اسحب وأفلت ملف ZIP هنا، أو انقر للاختيار',
-                        selectFile: 'اختر ملف',
+                        selectFile: 'اختر ملفًا',
                         fileUpload: 'رفع ملف ZIP',
                         urlInput: 'أدخل الرابط',
-                        urlPlaceholder: 'أدخل رابط مباشر لملف ZIP',
+                        urlPlaceholder: 'أدخل رابطًا مباشرًا لملف ZIP',
                         githubUrlPlaceholder: 'أدخل رابط مستودع GitHub (مثال: https://github.com/username/repo.git)',
                         branchInput: 'أدخل اسم الفرع',
                         branchPlaceholder: 'أدخل اسم الفرع (الافتراضي: main)',
@@ -226,7 +249,10 @@
                         uploadError: 'خطأ في رفع الملف',
                         extractError: 'خطأ في استخراج الملفات',
                         includeStructure: 'تضمين هيكل الملفات',
-                        uploadedFiles: 'الملفات المرفوعة'
+                        uploadedFiles: 'الملفات المرفوعة',
+                        selectAll: 'تحديد الكل',
+                        deselectAll: 'إلغاء تحديد الكل',
+                        excludeMedia: 'استبعاد ملفات الوسائط (الصور، الفيديوهات، إلخ)'
                     }
                 },
 
@@ -337,39 +363,110 @@
                     }
                 },
 
-                toggleFile(file) {
-                    const index = this.selectedFiles.indexOf(file);
+                toggleFolder(folderPath) {
+                    const folderObj = this.getNestedObject(this.fileStructure, folderPath.split('/'));
+                    const filesInFolder = this.getImmediateFilesInDirectory(folderObj);
+                    const allSelected = filesInFolder.every(file => this.selectedFiles.includes(file));
+                    
+                    if (allSelected) {
+                        this.selectedFiles = this.selectedFiles.filter(file => !filesInFolder.includes(file));
+                    } else {
+                        this.selectedFiles = [...new Set([...this.selectedFiles, ...filesInFolder])];
+                    }
+                },
+
+                toggleFile(filePath) {
+                    const index = this.selectedFiles.indexOf(filePath);
                     if (index === -1) {
-                        this.selectedFiles.push(file);
+                        this.selectedFiles.push(filePath);
                     } else {
                         this.selectedFiles.splice(index, 1);
                     }
                 },
 
-                toggleAllInDirectory(directory) {
-                    const filesInDirectory = this.getFilesInDirectory(directory);
-                    const allSelected = filesInDirectory.every(file => this.selectedFiles.includes(file));
-                    
-                    if (allSelected) {
-                        this.selectedFiles = this.selectedFiles.filter(file => !filesInDirectory.includes(file));
+                getNestedObject(obj, pathArray) {
+                    return pathArray.reduce((o, key, index) => {
+                        if (o && o.children && o.children[key]) {
+                            o.children[key].path = pathArray.slice(0, index + 1).join('/');
+                            return o.children[key];
+                        }
+                        return null;
+                    }, { children: obj });
+                },
+
+                getImmediateFilesInDirectory(directory) {
+                    const files = [];
+                    for (const [key, value] of Object.entries(directory.children || {})) {
+                        if (value.type === 'file') {
+                            const fullPath = directory.path ? `${directory.path}/${key}` : key;
+                            if (!this.isMediaFile(fullPath) || !this.excludeMediaFiles) {
+                                files.push(fullPath);
+                            }
+                        }
+                    }
+                    return files;
+                },
+
+                isMediaFile(filePath) {
+                    const mediaExtensions = ['.jpg', '.jpeg', '.png', '.gif', '.bmp', '.svg', '.mp4', '.avi', '.mov', '.wmv', '.mp3', '.wav', '.zip'];
+                    return mediaExtensions.some(ext => filePath.toLowerCase().endsWith(ext));
+                },
+
+                renderFileTree(name, item, path) {
+                    const fullPath = path ? `${path}/${name}` : name;
+                    if (item.type === 'file') {
+                        if (this.isMediaFile(fullPath) && this.excludeMediaFiles) {
+                            return '';
+                        }
+                        return `
+                            <div class="flex items-center mb-1">
+                                <input type="checkbox" value="${fullPath}" @change="toggleFile('${fullPath}')" :checked="selectedFiles.includes('${fullPath}')" class="mr-2">
+                                <i class="fas fa-file text-blue-500 mr-2"></i>
+                                <span>${name}</span>
+                            </div>
+                        `;
                     } else {
-                        this.selectedFiles = [...new Set([...this.selectedFiles, ...filesInDirectory])];
+                        const filesInDir = this.getImmediateFilesInDirectory({ children: item.children, path: fullPath });
+                        if (filesInDir.length === 0) {
+                            return '';
+                        }
+                        const allSelected = filesInDir.length > 0 && filesInDir.every(file => this.selectedFiles.includes(file));
+                        let html = `
+                            <div class="mb-1">
+                                <input type="checkbox" @change="toggleFolder('${fullPath}')" :checked="${allSelected}" class="mr-2">
+                                <i class="fas fa-folder text-yellow-500 mr-2"></i>
+                                <span class="font-semibold">${name}</span>
+                            </div>
+                            <div class="pl-4">
+                        `;
+                        for (const [childName, childItem] of Object.entries(item.children)) {
+                            html += this.renderFileTree(childName, childItem, fullPath);
+                        }
+                        html += '</div>';
+                        return html;
                     }
                 },
 
-                getFilesInDirectory(directory) {
-                    const files = [];
-                    const traverse = (obj, path = '') => {
-                        for (const [key, value] of Object.entries(obj)) {
-                            const newPath = path ? `${path}/${key}` : key;
-                            if (value.type === 'file') {
-                                files.push(newPath);
-                            } else if (value.type === 'directory') {
-                                traverse(value.children, newPath);
+                selectAllFiles() {
+                    this.selectedFiles = this.getAllFiles(this.fileStructure);
+                },
+
+                deselectAllFiles() {
+                    this.selectedFiles = [];
+                },
+
+                getAllFiles(obj, path = '') {
+                    let files = [];
+                    for (const [key, value] of Object.entries(obj)) {
+                        const fullPath = path ? `${path}/${key}` : key;
+                        if (value.type === 'file') {
+                            if (!this.isMediaFile(fullPath) || !this.excludeMediaFiles) {
+                                files.push(fullPath);
                             }
+                        } else if (value.type === 'directory') {
+                            files = files.concat(this.getAllFiles(value.children, fullPath));
                         }
-                    };
-                    traverse(directory);
+                    }
                     return files;
                 },
 
@@ -403,8 +500,10 @@
                     let structureText = "Project Structure:\n";
                     const addToStructure = (obj, depth = 0) => {
                         for (const [key, value] of Object.entries(obj)) {
-                            structureText += "  ".repeat(depth) + key + "\n";
-                            if (value.type === 'directory') {
+                            if (value.type === 'file' && (!this.isMediaFile(key) || !this.excludeMediaFiles)) {
+                                structureText += "  ".repeat(depth) + key + "\n";
+                            } else if (value.type === 'directory') {
+                                structureText += "  ".repeat(depth) + key + "/\n";
                                 addToStructure(value.children, depth + 1);
                             }
                         }
@@ -421,42 +520,17 @@
                     a.download = `${this.currentFileName}_merged_content.txt`;
                     a.click();
                 },
-
                 copyToClipboard() {
-                    navigator.clipboard.writeText(this.mergedContent).then(() => {
-                        alert(this.translations[this.currentLang].copiedToClipboard);
-                    });
-                },
-
-                renderFileTree(name, item, path) {
-                    const fullPath = path ? `${path}/${name}` : name;
-                    if (item.type === 'file') {
-                        return `
-                            <div class="flex items-center mb-1">
-                                <input type="checkbox" value="${item.path}" @change="toggleFile('${item.path}')" :checked="selectedFiles.includes('${item.path}')" class="mr-2">
-                                <i class="fas fa-file text-blue-500 mr-2"></i>
-                                <span>${name}</span>
-                            </div>
-                        `;
-                    } else {
-                        const filesInDir = this.getFilesInDirectory(item);
-                        const allSelected = filesInDir.every(file => this.selectedFiles.includes(file));
-                        return `
-                            <div class="mb-1">
-                                <input type="checkbox" @change="toggleAllInDirectory(${JSON.stringify(item)})" :checked="${allSelected}" class="mr-2">
-                                <i class="fas fa-folder text-yellow-500 mr-2"></i>
-                                <span class="font-semibold">${name}</span>
-                            </div>
-                            <div class="pl-4">
-                                ${Object.entries(item.children).map(([childName, childItem]) => 
-                                    this.renderFileTree(childName, childItem, fullPath)
-                                ).join('')}
-                            </div>
-                        `;
-                    }
-                }
-            };
-        }
-    </script>
+                navigator.clipboard.writeText(this.mergedContent).then(() => {
+                    alert(this.translations[this.currentLang].copiedToClipboard);
+                }).catch(err => {
+                    console.error('Failed to copy text: ', err);
+                });
+            }
+        };
+    }
+</script>
 </body>
 </html>
+
+
