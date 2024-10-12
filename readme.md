@@ -7,7 +7,7 @@ Zip 2 Prompt is a powerful tool that transforms project structures into AI-reada
 ## Key Features
 
 - Convert ZIP files, URLs, or GitHub repositories into AI-digestible text format
-- Selective file extraction for targeted AI analysis
+- Selective file extraction with enhanced folder and file selection options
 - Preserve and include project structure in the output
 - Customize prompts to guide AI analysis
 - Support for various file types common in software projects
@@ -15,7 +15,11 @@ Zip 2 Prompt is a powerful tool that transforms project structures into AI-reada
 - Bilingual support (English and Arabic)
 - File management system for uploaded projects
 - Ability to reopen and analyze previously uploaded projects
-- Checkbox system for easy selection of files and directories
+- Advanced checkbox system for easy selection of files and directories
+- Option to exclude media files (images, videos, etc.) from extraction
+- One-click selection/deselection of all files
+- Improved file tree visualization
+- Clipboard integration for quick copying of merged content
 
 ## Why Zip 2 Prompt?
 
@@ -24,14 +28,17 @@ Zip 2 Prompt is a powerful tool that transforms project structures into AI-reada
 3. Streamline AI prompting for large, structured projects
 4. Maintain project context for accurate AI interpretation
 5. Save time in preparing projects for AI processing
+6. Easily manage and filter relevant files for AI analysis
 
 ## Usage
 
 1. Upload a ZIP file, provide a URL, or enter a GitHub repository link
-2. Select relevant files for analysis using the checkbox system
-3. Add specific instructions or questions in the main prompt area
-4. Generate comprehensive text output
-5. Copy or download the output for use with AI models
+2. Select relevant files for analysis using the advanced checkbox system
+3. Customize file selection with "Select All" and "Deselect All" options
+4. Choose to exclude media files if needed
+5. Add specific instructions or questions in the main prompt area
+6. Generate comprehensive text output
+7. Copy to clipboard or download the output for use with AI models
 
 ## Getting Started
 
@@ -54,29 +61,32 @@ npm run start
 - Reopen previously uploaded projects for further analysis
 - Delete uploaded projects when no longer needed
 
-### File Selection
-- Checkbox system for easy selection of individual files
-- Select/deselect all files in a directory with a single click
-- View file structure in a tree format
+### Enhanced File Selection
+- Advanced checkbox system for granular file and folder selection
+- Select/deselect all files with a single click
+- Option to exclude media files from selection
+- Improved file tree visualization hiding empty folders
 
 ### Content Extraction
 - Extract content from selected files
 - Option to include file structure in the extracted content
 - Combine extracted content with a custom main prompt
+- Intelligent handling of media and non-text files
 
 ### Output Handling
-- Copy extracted content to clipboard
+- Copy extracted content to clipboard with one click
 - Download extracted content as a text file
+- Preview merged content before extraction
 
 ### User Interface
 - Dark mode toggle for comfortable viewing in different lighting conditions
-- Bilingual support (English and Arabic) with easy language switching
+- Comprehensive bilingual support (English and Arabic) with easy language switching
 - Responsive design for use on various devices
+- Intuitive drag-and-drop interface for file uploads
 
 ## Screenshots
 
 ![zip2prompt](https://raw.githubusercontent.com/Zizwar/zip2prompt/main/screen/image.png)
-
 ![zip2prompt](https://raw.githubusercontent.com/Zizwar/zip2prompt/main/screen/Screenshot_20240720-204349_Chrome.jpg)
 
 ## Try it out
