@@ -86,6 +86,7 @@ npm run start
 
 ## Screenshots
 
+![zip2prompt](https://raw.githubusercontent.com/Zizwar/zip2prompt/main/screen/IMG_0020.jpeg)
 ![zip2prompt](https://raw.githubusercontent.com/Zizwar/zip2prompt/main/screen/image.png)
 ![zip2prompt](https://raw.githubusercontent.com/Zizwar/zip2prompt/main/screen/Screenshot_20240720-204349_Chrome.jpg)
 
