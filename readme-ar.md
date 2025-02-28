@@ -112,7 +112,7 @@ npm run start
 
 ## صور توضيحية
 
-![zip2prompt](https://raw.githubusercontent.com/Zizwar/zip2prompt/main/screen/IMG_0860.jpeg)
+![zip2prompt](https://raw.githubusercontent.com/Zizwar/zip2prompt/main/screen/IMG_0860.png)
 ![zip2prompt](https://raw.githubusercontent.com/Zizwar/zip2prompt/main/screen/image.png)
 ![zip2prompt](https://raw.githubusercontent.com/Zizwar/zip2prompt/main/screen/Screenshot_20240720-204349_Chrome.jpg)
 
