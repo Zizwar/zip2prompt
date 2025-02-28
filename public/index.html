@@ -8,9 +8,24 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/alpinejs/3.10.3/cdn.min.js" defer></script>
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.7.1/jszip.min.js"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/default.min.css">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script>
     <style>
         [x-cloak] { display: none !important; }
         .rtl-exception { direction: ltr !important; }
+        .code-preview {
+            max-height: 400px;
+            overflow-y: auto;
+            font-family: Consolas, Monaco, 'Andale Mono', 'Ubuntu Mono', monospace;
+        }
+        .modal {
+            background-color: rgba(0, 0, 0, 0.5);
+        }
+        .modal-content {
+            max-width: 90%;
+            max-height: 90vh;
+            overflow: auto;
+        }
     </style>
 </head>
 <body class="bg-gray-100 dark:bg-gray-800 text-gray-800 dark:text-gray-200 transition-colors duration-200" 
@@ -34,6 +49,16 @@
 
         <div class="mb-6 bg-white dark:bg-gray-700 p-4 rounded-lg shadow">
             <label :for="translations[currentLang].promptLabel" class="block mb-2 font-semibold" x-text="translations[currentLang].promptLabel"></label>
+            
+            <div class="mb-4">
+                <select x-model="selectedTemplate" @change="applyTemplate" class="w-full p-2 border rounded dark:bg-gray-600 dark:border-gray-500">
+                    <option value="" x-text="translations[currentLang].selectTemplate"></option>
+                    <template x-for="template in promptTemplates" :key="template.name">
+                        <option :value="template.name" x-text="template.name"></option>
+                    </template>
+                </select>
+            </div>
+            
             <textarea :id="translations[currentLang].promptLabel" x-model="mainPrompt" class="w-full p-2 border rounded dark:bg-gray-600 dark:border-gray-500" rows="3"></textarea>
         </div>
 
@@ -108,8 +133,8 @@
             <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div class="rtl-exception bg-white dark:bg-gray-700 p-4 rounded-lg shadow">
                     <h2 class="text-xl font-semibold mb-2" x-text="translations[currentLang].fileStructure"></h2>
-                    <div class="mb-4">
-                        <button @click="selectAllFiles" class="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded transition duration-150 mr-2">
+                    <div class="mb-4 flex flex-wrap gap-2">
+                        <button @click="selectAllFiles" class="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded transition duration-150">
                             <i class="fas fa-check-double mr-2"></i>
                             <span x-text="translations[currentLang].selectAll"></span>
                         </button>
@@ -117,11 +142,41 @@
                             <i class="fas fa-times mr-2"></i>
                             <span x-text="translations[currentLang].deselectAll"></span>
                         </button>
+                        <button @click="selectImportantFiles" class="bg-green-500 hover:bg-green-600 text-white px-4 py-2 rounded transition duration-150" x-show="importantFiles.length > 0">
+                            <i class="fas fa-star mr-2"></i>
+                            <span x-text="translations[currentLang].selectImportant"></span>
+                        </button>
                     </div>
+                    
+                    <!-- File Group Management -->
+                    <div class="mb-4 border-t border-gray-200 dark:border-gray-600 pt-2">
+                        <div class="flex gap-2 mb-2">
+                            <input type="text" x-model="newGroupName" :placeholder="translations[currentLang].groupNamePlaceholder" class="flex-grow p-2 border rounded dark:bg-gray-600 dark:border-gray-500">
+                            <button @click="saveFileGroup" class="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded transition duration-150">
+                                <i class="fas fa-save mr-2"></i>
+                                <span x-text="translations[currentLang].saveGroup"></span>
+                            </button>
+                        </div>
+                        
+                        <div x-show="fileGroups.length > 0" class="mb-2">
+                            <label class="block mb-1" x-text="translations[currentLang].loadGroup"></label>
+                            <select @change="loadFileGroup($event.target.value)" class="w-full p-2 border rounded dark:bg-gray-600 dark:border-gray-500">
+                                <option value="" x-text="translations[currentLang].selectGroup"></option>
+                                <template x-for="group in fileGroups" :key="group.name">
+                                    <option :value="group.name" x-text="group.name"></option>
+                                </template>
+                            </select>
+                        </div>
+                    </div>
+                    
                     <div class="mb-4">
                         <label class="flex items-center">
                             <input type="checkbox" x-model="excludeMediaFiles" class="mr-2">
                             <span x-text="translations[currentLang].excludeMedia"></span>
+                        </label>
+                        <label class="flex items-center mt-2">
+                            <input type="checkbox" x-model="summarizeCode" class="mr-2">
+                            <span x-text="translations[currentLang].summarizeCode"></span>
                         </label>
                     </div>
                     <div id="fileTree" class="border p-4 rounded dark:bg-gray-600 dark:border-gray-500 max-h-96 overflow-y-auto">
@@ -173,6 +228,42 @@
         </template>
     </div>
 
+    <!-- File Preview Modal -->
+    <div x-show="showPreviewModal" class="fixed inset-0 flex items-center justify-center z-50 modal" @click.self="showPreviewModal = false">
+        <div class="modal-content bg-white dark:bg-gray-800 p-6 rounded-lg shadow-lg">
+            <div class="flex justify-between items-center mb-4">
+                <h3 class="text-xl font-semibold" x-text="previewFileName"></h3>
+                <button @click="showPreviewModal = false" class="text-gray-500 hover:text-gray-700 dark:text-gray-300 dark:hover:text-gray-100">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            <div class="code-preview rtl-exception">
+                <pre><code x-html="previewContent" class="hljs overflow-auto"></code></pre>
+            </div>
+            <div class="mt-4 flex justify-between">
+                <button 
+                    @click="toggleFileSelection(previewFilePath)"
+                    class="px-4 py-2 rounded transition duration-150"
+                    :class="selectedFiles.includes(previewFilePath) 
+                        ? 'bg-red-500 hover:bg-red-600 text-white' 
+                        : 'bg-green-500 hover:bg-green-600 text-white'"
+                >
+                    <i :class="selectedFiles.includes(previewFilePath) ? 'fas fa-minus' : 'fas fa-plus'" class="mr-2"></i>
+                    <span x-text="selectedFiles.includes(previewFilePath) 
+                        ? translations[currentLang].removeFromSelection 
+                        : translations[currentLang].addToSelection">
+                    </span>
+                </button>
+                <button 
+                    @click="showPreviewModal = false"
+                    class="bg-gray-300 hover:bg-gray-400 dark:bg-gray-700 dark:hover:bg-gray-600 px-4 py-2 rounded transition duration-150"
+                >
+                    <span x-text="translations[currentLang].close"></span>
+                </button>
+            </div>
+        </div>
+    </div>
+
     <script>
         function zip2Prompt() {
             return {
@@ -190,6 +281,21 @@
                 uploadedFiles: [],
                 currentFileName: '',
                 excludeMediaFiles: true,
+                summarizeCode: false,
+                importantFiles: [],
+                
+                // New properties for the new features
+                promptTemplates: [],
+                selectedTemplate: '',
+                fileGroups: [],
+                newGroupName: '',
+                
+                // File preview modal properties
+                showPreviewModal: false,
+                previewContent: '',
+                previewFileName: '',
+                previewFilePath: '',
+                
                 translations: {
                     en: {
                         title: 'ZIP 2 Prompt',
@@ -219,11 +325,21 @@
                         uploadedFiles: 'Uploaded Files',
                         selectAll: 'Select All',
                         deselectAll: 'Deselect All',
-                        excludeMedia: 'Exclude media files (images, videos, etc.)'
+                        excludeMedia: 'Exclude media files (images, videos, etc.)',
+                        previewFile: 'Preview File',
+                        close: 'Close',
+                        addToSelection: 'Add to Selection',
+                        removeFromSelection: 'Remove from Selection',
+                        selectTemplate: 'Select a Prompt Template',
+                        summarizeCode: 'Summarize code (remove comments, format)',
+                        selectImportant: 'Select Important Files',
+                        saveGroup: 'Save Selection',
+                        groupNamePlaceholder: 'Enter group name',
+                        loadGroup: 'Load Saved Selection',
+                        selectGroup: 'Select a saved group',
+                        groupSaved: 'File group saved successfully',
+                        groupError: 'Error saving file group'
                     },
-                    ////
-
-
                     ar: {
                         title: 'ضغط إلى برومبت',
                         promptLabel: 'البرومبت الرئيسي',
@@ -252,14 +368,114 @@
                         uploadedFiles: 'الملفات المرفوعة',
                         selectAll: 'تحديد الكل',
                         deselectAll: 'إلغاء تحديد الكل',
-                        excludeMedia: 'استبعاد ملفات الوسائط (الصور، الفيديوهات، إلخ)'
+                        excludeMedia: 'استبعاد ملفات الوسائط (الصور، الفيديوهات، إلخ)',
+                        previewFile: 'معاينة الملف',
+                        close: 'إغلاق',
+                        addToSelection: 'إضافة إلى التحديد',
+                        removeFromSelection: 'إزالة من التحديد',
+                        selectTemplate: 'اختر قالب برومبت',
+                        summarizeCode: 'تلخيص الكود (إزالة التعليقات، تنسيق)',
+                        selectImportant: 'تحديد الملفات المهمة',
+                        saveGroup: 'حفظ التحديد',
+                        groupNamePlaceholder: 'أدخل اسم المجموعة',
+                        loadGroup: 'تحميل مجموعة محفوظة',
+                        selectGroup: 'اختر مجموعة محفوظة',
+                        groupSaved: 'تم حفظ مجموعة الملفات بنجاح',
+                        groupError: 'خطأ في حفظ مجموعة الملفات'
                     }
                 },
 
-                init() {
+                async init() {
                     this.darkMode = localStorage.getItem('darkMode') === 'true';
                     this.toggleDarkMode();
-                    this.fetchUploadedFiles();
+                    await this.fetchUploadedFiles();
+                    await this.fetchPromptTemplates();
+                    await this.fetchFileGroups();
+                    
+                    // Set event listeners for file tree
+                    document.addEventListener('click', (e) => {
+                        if (e.target.classList.contains('file-preview-btn')) {
+                            const filePath = e.target.getAttribute('data-path');
+                            this.previewFile(filePath);
+                        }
+                    });
+                },
+
+                async fetchPromptTemplates() {
+                    try {
+                        const response = await fetch('/prompt-templates');
+                        if (!response.ok) {
+                            throw new Error('Failed to fetch prompt templates');
+                        }
+                        this.promptTemplates = await response.json();
+                    } catch (error) {
+                        console.error('Error fetching prompt templates:', error);
+                    }
+                },
+                
+                async fetchFileGroups() {
+                    try {
+                        const response = await fetch('/file-groups');
+                        if (!response.ok) {
+                            throw new Error('Failed to fetch file groups');
+                        }
+                        this.fileGroups = await response.json();
+                    } catch (error) {
+                        console.error('Error fetching file groups:', error);
+                    }
+                },
+                
+                applyTemplate() {
+                    if (!this.selectedTemplate) return;
+                    
+                    const template = this.promptTemplates.find(t => t.name === this.selectedTemplate);
+                    if (template) {
+                        this.mainPrompt = template.content;
+                    }
+                },
+                
+                async saveFileGroup() {
+                    if (!this.newGroupName || this.selectedFiles.length === 0 || !this.currentFileName) {
+                        return;
+                    }
+                    
+                    const formData = new FormData();
+                    formData.append('name', this.newGroupName);
+                    formData.append('files', JSON.stringify(this.selectedFiles));
+                    formData.append('filename', this.currentFileName);
+                    
+                    try {
+                        const response = await fetch('/file-groups', {
+                            method: 'POST',
+                            body: formData
+                        });
+                        
+                        if (!response.ok) {
+                            throw new Error('Failed to save file group');
+                        }
+                        
+                        await this.fetchFileGroups();
+                        alert(this.translations[this.currentLang].groupSaved);
+                        this.newGroupName = '';
+                    } catch (error) {
+                        console.error('Error saving file group:', error);
+                        alert(this.translations[this.currentLang].groupError + ': ' + error.message);
+                    }
+                },
+                
+                async loadFileGroup(groupName) {
+                    if (!groupName) return;
+                    
+                    const group = this.fileGroups.find(g => g.name === groupName);
+                    if (!group) return;
+                    
+                    // Check if we need to reopen the file first
+                    if (this.currentFileName !== group.filename) {
+                        await this.reopenFile(group.filename);
+                    }
+                    
+                    // Now set the selected files
+                    this.selectedFiles = [...group.files];
                 },
 
                 toggleDarkMode() {
@@ -311,6 +527,8 @@
                         const result = await response.json();
                         this.fileStructure = result.fileStructure;
                         this.currentFileName = result.filename;
+                        this.importantFiles = result.importantFiles || [];
+                        this.selectedFiles = [];
                         this.fetchUploadedFiles();
                     } catch (error) {
                         console.error('Error uploading file:', error);
@@ -357,9 +575,43 @@
                         const result = await response.json();
                         this.fileStructure = result.fileStructure;
                         this.currentFileName = result.filename;
+                        this.importantFiles = result.importantFiles || [];
                         this.selectedFiles = [];
                     } catch (error) {
                         console.error('Error reopening file:', error);
+                    }
+                },
+                
+                async previewFile(filePath) {
+                    try {
+                        const response = await fetch(`/file-preview/${this.currentFileName}/${filePath}`);
+                        if (!response.ok) {
+                            throw new Error('Failed to preview file');
+                        }
+                        const result = await response.json();
+                        
+                        this.previewContent = result.content;
+                        this.previewFileName = filePath.split('/').pop();
+                        this.previewFilePath = filePath;
+                        this.showPreviewModal = true;
+                        
+                        // Use highlight.js to format code
+                        setTimeout(() => {
+                            document.querySelectorAll('pre code').forEach((block) => {
+                                hljs.highlightElement(block);
+                            });
+                        }, 100);
+                    } catch (error) {
+                        console.error('Error previewing file:', error);
+                    }
+                },
+                
+                toggleFileSelection(filePath) {
+                    const index = this.selectedFiles.indexOf(filePath);
+                    if (index === -1) {
+                        this.selectedFiles.push(filePath);
+                    } else {
+                        this.selectedFiles.splice(index, 1);
                     }
                 },
 
@@ -418,11 +670,23 @@
                         if (this.isMediaFile(fullPath) && this.excludeMediaFiles) {
                             return '';
                         }
+                        
+                        const isImportant = this.importantFiles.includes(fullPath);
+                        const importantStar = isImportant ? `<i class="fas fa-star text-yellow-500 mr-1"></i>` : '';
+                        
                         return `
                             <div class="flex items-center mb-1">
                                 <input type="checkbox" value="${fullPath}" @change="toggleFile('${fullPath}')" :checked="selectedFiles.includes('${fullPath}')" class="mr-2">
                                 <i class="fas fa-file text-blue-500 mr-2"></i>
+                                ${importantStar}
                                 <span>${name}</span>
+                                <button 
+                                    class="ml-2 text-gray-500 hover:text-blue-500 file-preview-btn" 
+                                    data-path="${fullPath}" 
+                                    title="${this.translations[this.currentLang].previewFile}"
+                                >
+                                    <i class="fas fa-eye"></i>
+                                </button>
                             </div>
                         `;
                     } else {
@@ -454,6 +718,10 @@
                 deselectAllFiles() {
                     this.selectedFiles = [];
                 },
+                
+                selectImportantFiles() {
+                    this.selectedFiles = [...this.importantFiles];
+                },
 
                 getAllFiles(obj, path = '') {
                     let files = [];
@@ -474,6 +742,7 @@
                     const formData = new FormData();
                     formData.append('files', JSON.stringify(this.selectedFiles));
                     formData.append('filename', this.currentFileName);
+                    formData.append('summarize', this.summarizeCode.toString());
 
                     try {
                         const response = await fetch('/extract', {
@@ -501,7 +770,8 @@
                     const addToStructure = (obj, depth = 0) => {
                         for (const [key, value] of Object.entries(obj)) {
                             if (value.type === 'file' && (!this.isMediaFile(key) || !this.excludeMediaFiles)) {
-                                structureText += "  ".repeat(depth) + key + "\n";
+                                const isImportant = this.importantFiles.includes(key) ? " [*]" : "";
+                                structureText += "  ".repeat(depth) + key + isImportant + "\n";
                             } else if (value.type === 'directory') {
                                 structureText += "  ".repeat(depth) + key + "/\n";
                                 addToStructure(value.children, depth + 1);
@@ -520,17 +790,16 @@
                     a.download = `${this.currentFileName}_merged_content.txt`;
                     a.click();
                 },
+                
                 copyToClipboard() {
-                navigator.clipboard.writeText(this.mergedContent).then(() => {
-                    alert(this.translations[this.currentLang].copiedToClipboard);
-                }).catch(err => {
-                    console.error('Failed to copy text: ', err);
-                });
-            }
-        };
-    }
-</script>
+                    navigator.clipboard.writeText(this.mergedContent).then(() => {
+                        alert(this.translations[this.currentLang].copiedToClipboard);
+                    }).catch(err => {
+                        console.error('Failed to copy text: ', err);
+                    });
+                }
+            };
+        }
+    </script>
 </body>
 </html>
-
-
