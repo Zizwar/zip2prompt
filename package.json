@@ -1,17 +1,18 @@
 {
   "name": "zip2prompt",
-  "version": "0.8.0",
+  "version": "1.0.0",
   "main": "server.js",
   "start": "node server.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
-    "start": "node server.js"
+    "start": "node server.js",
+    "dev": "node --watch server.js"
   },
   "type": "module",
-  "keywords": [],
+  "keywords": ["ai", "code-analysis", "zip", "prompt", "openrouter", "claude"],
   "author": "Brahim BIDI",
   "license": "ISC",
-  "description": "zip2prompt",
+  "description": "Interactive AI-powered code analysis platform - Upload projects and chat with multiple AI models",
   "dependencies": {
     "@hono/node-server": "^1.12.0",
     "adm-zip": "^0.5.14",
@@ -19,6 +20,11 @@
     "js-beautify": "^1.14.11",
     "highlight.js": "^11.9.0",
     "language-detect": "^1.1.0",
-    "strip-comments": "^2.0.1"
+    "strip-comments": "^2.0.1",
+    "mongodb": "^6.0.0",
+    "openai": "^4.0.0",
+    "dotenv": "^16.0.0",
+    "bcrypt": "^5.1.0",
+    "jsonwebtoken": "^9.0.0"
   }
 }
